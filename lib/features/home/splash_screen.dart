@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import './language/language_selection_screen.dart';
+import 'package:nubtk_pilot/features/home/language/language_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,7 +14,9 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
+    // Splash delay then navigate to Language Selection
     Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -28,35 +30,43 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.indigo,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/nubtk_logo.png',
-              width: 120,
-              height: 120,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Northern University of\nBusiness & Technology Khulna',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // University Logo
+              Image.asset(
+                'assets/images/nubtk_logo.png',
+                width: 120,
+                height: 120,
+                fit: BoxFit.contain,
               ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'NUBTK PILOT',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                letterSpacing: 2,
+              const SizedBox(height: 24),
+
+              // University Name
+              const Text(
+                'Northern University of\nBusiness & Technology Khulna',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+
+              // App Name
+              const Text(
+                'NUBTK PILOT',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
