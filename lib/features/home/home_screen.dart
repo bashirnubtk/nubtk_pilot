@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../widgets/primary_button.dart';
 import '../../core/constants/app_strings.dart';
 import '../home/language/language_provider.dart';
 import '../auth/login_screen.dart';
+import '../auth/register_screen.dart'; // নতুন ইম্পোর্ট যোগ করা হয়েছে
 import '../ai_bot/ai_bot_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -14,7 +14,7 @@ class HomeScreen extends StatelessWidget {
     final languageCode = Provider.of<LanguageProvider>(context).languageCode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // Soft modern background
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         centerTitle: true,
         elevation: 0,
@@ -57,11 +57,11 @@ class HomeScreen extends StatelessWidget {
               _quickLinksSection(languageCode),
               const SizedBox(height: 32),
 
-              // AI Assistant Button with Sparkle Icon
+              // AI Assistant Button
               _aiAssistantButton(languageCode, context),
               const SizedBox(height: 20),
 
-              // Auth Buttons (Login & Register)
+              // Auth Buttons (এখন নেভিগেশন সহ)
               _authButtons(languageCode, context),
               const SizedBox(height: 30),
             ],
@@ -84,7 +84,7 @@ class HomeScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.indigo.withOpacity(0.25),
+            color: Colors.indigo.withAlpha(64), // ফিক্সড withOpacity warning
             blurRadius: 20,
             offset: const Offset(0, 10),
           )
@@ -116,13 +116,17 @@ class HomeScreen extends StatelessWidget {
           gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.indigo]),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.purple.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))
+            BoxShadow(
+              color: Colors.purple.withAlpha(51), // ফিক্সড withOpacity warning
+              blurRadius: 10, 
+              offset: const Offset(0, 4),
+            )
           ]
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 22), // Gemini style sparkle
+            const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 22),
             const SizedBox(width: 10),
             Text(
               AppStrings.askAIBot[languageCode]!,
@@ -149,7 +153,13 @@ class HomeScreen extends StatelessWidget {
           child: _modernButton(
             title: AppStrings.register[languageCode]!,
             isFilled: true,
-            onPressed: () {},
+            onPressed: () {
+              // নেভিগেশন যোগ করা হয়েছে
+              Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (_) => const RegisterScreen())
+              );
+            },
           ),
         ),
       ],
@@ -256,13 +266,17 @@ class _NoticeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(
+            color: Colors.black.withAlpha(5), // updated
+            blurRadius: 10, 
+            offset: const Offset(0, 4),
+          )
         ],
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withAlpha(26), // updated
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
