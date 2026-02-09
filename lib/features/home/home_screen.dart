@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../core/constants/app_strings.dart';
 import '../home/language/language_provider.dart';
-
+import '../auth/login_screen.dart';
 import '../ai_bot/ai_bot_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -45,9 +45,13 @@ class HomeScreen extends StatelessWidget {
             PrimaryButton(
               title: AppStrings.login[languageCode]!,
               onPressed: () {
-                // TODO: Implement Login Screen navigation
-              },
-            ),
+                Navigator.push(
+               context,
+               MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+                },
+                ),
+
             const SizedBox(height: 12),
 
             // Register Button
