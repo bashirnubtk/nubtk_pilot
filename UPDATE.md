@@ -63,6 +63,10 @@ git commit -m "fix(localization): fix LanguageProvider type errors"
 git push origin dev
 
 
+git add .
+git commit -m "feat: add login UI and remove pending TODO navigation"
+git push origin dev
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev
