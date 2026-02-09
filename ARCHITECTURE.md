@@ -18,6 +18,8 @@ nubtk_pilot/
     │   │   └── language_selection_screen.dart
     │   ├── auth/
     │   ├── student/
+    │   │     ├──student_model.dart  
+    │   │     ├──data_service.dart
     │   ├── admin/
     │   ├── ai_bot/
     │   ├── payment/

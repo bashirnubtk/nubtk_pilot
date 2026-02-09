@@ -79,6 +79,10 @@ git commit -m "feat: upgrade Home UI with glassmorphic cards and Gemini-style AI
 git push origin dev
 09/02/2026
 
+git add .
+git commit -m "fix: resolve UI warnings and implement home to register navigation"
+git push origin dev
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev

@@ -1,90 +1,37 @@
 class AppStrings {
-  // Splash Screen
+  // Splash & Language
   static const splashUniversityName = {
     'en': 'Northern University of\nBusiness & Technology Khulna',
     'bn': 'নর্দান ইউনিভার্সিটি বিজনেস ও টেকনোলজি খুলনা',
   };
+  static const splashAppName = {'en': 'NUBTK PILOT', 'bn': 'NUBTK পাইলট'};
+  static const selectLanguage = {'en': 'Select Language', 'bn': 'ভাষা নির্বাচন করুন'};
+  static const bangla = {'en': 'Bangla', 'bn': 'বাংলা'};
+  static const english = {'en': 'English', 'bn': 'ইংরেজি'};
 
-  static const splashAppName = {
-    'en': 'NUBTK PILOT',
-    'bn': 'NUBTK পাইলট',
-  };
+  // Auth & Form Fields
+  static const login = {'en': 'Login', 'bn': 'লগইন'};
+  static const register = {'en': 'Apply for Admission', 'bn': 'ভর্তির আবেদন'};
+  static const name = {'en': 'Full Name', 'bn': 'পূর্ণ নাম'};
+  static const email = {'en': 'Email Address', 'bn': 'ইমেইল ঠিকানা'};
+  static const phone = {'en': 'Phone Number', 'bn': 'ফোন নম্বর'};
+  static const alreadyHaveAccount = {'en': 'Already have an account?', 'bn': 'আপনার কি অ্যাকাউন্ট আছে?'};
 
-  // Language Selection
-  static const selectLanguage = {
-    'en': 'Select Language',
-    'bn': 'ভাষা নির্বাচন করুন',
+  // Success Dialog & Action
+  static const regSuccess = {
+    'en': 'Application Submitted',
+    'bn': 'আবেদন জমা দেওয়া হয়েছে',
   };
-
-  static const bangla = {
-    'en': 'Bangla',
-    'bn': 'বাংলা',
+  static const checkGmail = {
+    'en': 'Your application is received. Please check Gmail after admin approval for your Digital ID.',
+    'bn': 'আপনার আবেদনটি গ্রহণ করা হয়েছে। অ্যাডমিন অনুমোদনের পর ডিজিটাল আইডির জন্য জিমেইল চেক করুন।',
   };
-
-  static const english = {
-    'en': 'English',
-    'bn': 'ইংরেজি',
-  };
-
-  // Auth & Form Fields (নতুন যোগ করা হয়েছে - তোমার ফরম্যাটে)
-  static const login = {
-    'en': 'Login',
-    'bn': 'লগইন',
-  };
-
-  static const register = {
-    'en': 'Register',
-    'bn': 'রেজিস্টার',
-  };
-
-  static const name = {
-    'en': 'Full Name',
-    'bn': 'পূর্ণ নাম',
-  };
-
-  static const email = {
-    'en': 'Email Address',
-    'bn': 'ইমেইল ঠিকানা',
-  };
-
-  static const password = {
-    'en': 'Password',
-    'bn': 'পাসওয়ার্ড',
-  };
-
-  static const alreadyHaveAccount = {
-    'en': 'Already have an account?',
-    'bn': 'আপনার কি আগে থেকে অ্যাকাউন্ট আছে?',
-  };
+  static const close = {'en': 'Close', 'bn': 'বন্ধ করুন'};
 
   // Home Screen
-  static const latestNotices = {
-    'en': 'Latest Notices',
-    'bn': 'সর্বশেষ নোটিশ',
-  };
-
-  static const quickLinks = {
-    'en': 'Quick Links',
-    'bn': 'দ্রুত লিঙ্ক',
-  };
-
-  static const universityWebsite = {
-    'en': 'University Website',
-    'bn': 'ভার্সিটির ওয়েবসাইট',
-  };
-
-  static const resultPortal = {
-    'en': 'Result Portal',
-    'bn': 'রেজাল্ট পোর্টাল',
-  };
-
-  static const onlineAdmission = {
-    'en': 'Online Admission',
-    'bn': 'অনলাইন ভর্তি',
-  };
-
-  static const askAIBot = {
-    'en': '🤖 Ask AI Bot (Guest)',
-    'bn': '🤖 এআই বট জিজ্ঞাসা করুন (অতিথি)',
-  };
+  static const latestNotices = {'en': 'Latest Notices', 'bn': 'সর্বশেষ নোটিশ'};
+  static const quickLinks = {'en': 'Quick Links', 'bn': 'দ্রুত লিঙ্ক'};
+  static const universityWebsite = {'en': 'University Website', 'bn': 'ভার্সিটির ওয়েবসাইট'};
+  static const resultPortal = {'en': 'Result Portal', 'bn': 'রেজাল্ট পোর্টাল'};
+  static const askAIBot = {'en': '🤖 Ask AI Bot (Guest)', 'bn': '🤖 এআই বট জিজ্ঞাসা করুন'};
 }
