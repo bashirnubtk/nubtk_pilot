@@ -58,6 +58,9 @@ git add lib/features/home/splash_screen.dart
 git commit -m "Improve splash screen stability and safe navigation"
 git push origin dev
 
+git add .
+git commit -m "fix(localization): fix LanguageProvider type errors"
+git push origin dev
 
 
 প্রজেক্টের শেষে

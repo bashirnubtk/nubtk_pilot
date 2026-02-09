@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../core/constants/app_strings.dart';
-import '../../core/localization/language_provider.dart';
+import '../home/language/language_provider.dart';
+
 import '../ai_bot/ai_bot_screen.dart';
 
 class HomeScreen extends StatelessWidget {
