@@ -67,6 +67,18 @@ git add .
 git commit -m "feat: add login UI and remove pending TODO navigation"
 git push origin dev
 
+
+git add .
+git commit -m "Enhance home UI with notifications, cards, and quick links layout"
+git push origin dev
+03:01:03
+09/02/2026
+
+git add .
+git commit -m "feat: upgrade Home UI with glassmorphic cards and Gemini-style AI interaction"
+git push origin dev
+09/02/2026
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev
