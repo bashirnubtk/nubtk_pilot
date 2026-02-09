@@ -1,42 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../widgets/primary_button.dart';
+import '../../core/constants/app_strings.dart';
+import '../../core/localization/language_provider.dart';
+import '../ai_bot/ai_bot_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Current language from Provider
+    final languageCode = Provider.of<LanguageProvider>(context).languageCode;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('NUBTK PILOT'),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _noticeSection(),
+            _noticeSection(languageCode),
             const SizedBox(height: 24),
-            _quickLinksSection(),
-            const SizedBox(height: 24),
+            _quickLinksSection(languageCode),
+            const SizedBox(height: 32),
+
+            // AI Bot Button
             PrimaryButton(
-              title: '🤖 Ask AI Bot (Guest)',
+              title: AppStrings.askAIBot[languageCode]!,
               onPressed: () {
-                // future: navigate to AI bot
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AIBotScreen()),
+                );
               },
             ),
             const SizedBox(height: 16),
+
+            // Login Button
             PrimaryButton(
-              title: 'Login',
+              title: AppStrings.login[languageCode]!,
               onPressed: () {
-                // future: login
+                // TODO: Implement Login Screen navigation
               },
             ),
             const SizedBox(height: 12),
+
+            // Register Button
             PrimaryButton(
-              title: 'Register',
+              title: AppStrings.register[languageCode]!,
               onPressed: () {
-                // future: register
+                // TODO: Implement Registration Screen navigation
               },
             ),
           ],
@@ -45,62 +62,55 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _noticeSection() {
+  Widget _noticeSection(String languageCode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '📢 Latest Notices',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          '📢 ${AppStrings.latestNotices[languageCode]!}',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        Card(
+        const Card(
           child: ListTile(
-            title: const Text('Spring Semester Admission Ongoing'),
-            subtitle: const Text('Last date: 30 March'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {},
+            title: Text('Spring Semester Admission Ongoing'),
+            subtitle: Text('Last date: 30 March'),
           ),
         ),
-        Card(
+        const Card(
           child: ListTile(
-            title: const Text('Mid Term Exam Schedule Published'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {},
+            title: Text('Mid Term Exam Schedule Published'),
           ),
         ),
       ],
     );
   }
 
-  Widget _quickLinksSection() {
+  Widget _quickLinksSection(String languageCode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '🔗 Quick Links',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          '🔗 ${AppStrings.quickLinks[languageCode]!}',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Card(
           child: ListTile(
             leading: const Icon(Icons.language),
-            title: const Text('University Website'),
-            onTap: () {},
+            title: Text(AppStrings.universityWebsite[languageCode]!),
           ),
         ),
         Card(
           child: ListTile(
             leading: const Icon(Icons.school),
-            title: const Text('Result Portal'),
-            onTap: () {},
+            title: Text(AppStrings.resultPortal[languageCode]!),
           ),
         ),
         Card(
           child: ListTile(
             leading: const Icon(Icons.app_registration),
-            title: const Text('Online Admission'),
-            onTap: () {},
+            title: Text(AppStrings.onlineAdmission[languageCode]!),
           ),
         ),
       ],

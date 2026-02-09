@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_strings.dart';
+import 'language_provider.dart';
+import '../home_screen.dart';
 
 class LanguageSelectionScreen extends StatelessWidget {
   const LanguageSelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    final currentCode = languageProvider.languageCode;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Language'),
+        title: Text(AppStrings.selectLanguage[currentCode]!),
         centerTitle: true,
       ),
       body: Padding(
@@ -15,9 +22,9 @@ class LanguageSelectionScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _languageButton(context, 'বাংলা', 'bn'),
+            _languageButton(context, AppStrings.bangla[currentCode]!, 'bn'),
             const SizedBox(height: 16),
-            _languageButton(context, 'English', 'en'),
+            _languageButton(context, AppStrings.english[currentCode]!, 'en'),
           ],
         ),
       ),
@@ -30,7 +37,14 @@ class LanguageSelectionScreen extends StatelessWidget {
       height: 50,
       child: ElevatedButton(
         onPressed: () {
-          // future: save language & navigate home
+          final languageProvider =
+              Provider.of<LanguageProvider>(context, listen: false);
+          languageProvider.setLanguage(code);
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
         },
         child: Text(
           title,
