@@ -35,11 +35,20 @@ class AppStrings {
   static const resultPortal = {'en': 'Result Portal', 'bn': 'রেজাল্ট পোর্টাল'};
   static const askAIBot = {'en': '🤖 Ask AI Bot (Guest)', 'bn': '🤖 এআই বট জিজ্ঞাসা করুন'};
 
-  // --- Login System New Strings (নতুন যোগ করা হয়েছে) ---
+  // New Strings for Uploads & Note
+  static const uploadPhoto = {'en': 'Upload Student Photo', 'bn': 'ছাত্রের ছবি আপলোড করুন'};
+  static const sscMarksheet = {'en': 'SSC Marksheet (PDF/Image)', 'bn': 'এসএসসি মার্কশিট'};
+  static const hscMarksheet = {'en': 'HSC Marksheet (PDF/Image)', 'bn': 'এইচএসসি মার্কশিট'};
+  static const optionalNote = {
+    'en': 'Note: Providing documents is optional, but it may speed up your approval process.',
+    'bn': 'দ্রষ্টব্য: নথি প্রদান করা ঐচ্ছিক, তবে এটি আপনার অনুমোদন প্রক্রিয়া দ্রুত করতে পারে।'
+  };
+
+  // Login System
   static const studentLogin = {'en': 'Student Login', 'bn': 'ছাত্র লগইন'};
   static const adminLogin = {'en': 'Admin Login', 'bn': 'অ্যাডমিন লগইন'};
   static const emailOrUser = {'en': 'Email / Username', 'bn': 'ইমেইল / ইউজারনেম'};
-  static const passwordOrId = {'en': 'Digital ID / Password', 'bn': 'ডিজিটাল আইডি / পাসওয়ার্ড'};
+  static const passwordOrId = {'en': 'Digital ID / Password', 'bn': 'ডিজিটাল আইডি / পাসওয়ার্ড'};
   static const invalidCreds = {'en': 'Invalid Credentials', 'bn': 'ভুল তথ্য দিয়েছেন'};
   static const notApproved = {'en': 'Application not approved yet', 'bn': 'আবেদন এখনো অনুমোদিত হয়নি'};
 }

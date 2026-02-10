@@ -104,6 +104,15 @@ git add .
 git commit -m "feat: integrate firebase core, auth, and firestore with version conflict resolution"
 git push origin dev
 
+
+git add .
+git commit -m "fix: resolve kts build errors, sync firebase package, and implement file upload UI"
+git push origin dev
+
+03:15:26
+10/02/2026
+
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev

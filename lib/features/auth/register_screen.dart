@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // ফায়ারবেস ক্লাউড স্টোর ইম্পোর্ট
+import 'package:cloud_firestore/cloud_firestore.dart'; 
 import '../../core/constants/app_strings.dart';
 import '../home/home_screen.dart';
 import '../student/student_model.dart';
@@ -28,10 +28,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   String? _selectedDept;
   String _photoPath = '';
+  // নতুন ফাইল প্যাথ ভ্যারিয়েবল
+  String _sscPath = '';
+  String _hscPath = '';
 
   final List<String> departments = ['CSE', 'EEE', 'BBA', 'English', 'Law'];
 
-  // ফায়ারবেস এবং লোকাল ডাটাবেজে সাবমিট করার লজিক
+  // ফায়ারবেস এবং লোকাল ডাটাবেজে সাবমিট করার লজিক
   void _submit(String lang) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -48,15 +51,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       hscGpa: double.tryParse(_hsc.text),
       photoUrl: _photoPath,
       status: 'pending',
-      digitalId: digitalId, // ডিজিটাল আইডি সেট করা হলো
+      digitalId: digitalId, 
       createdAt: DateTime.now(),
     );
 
     try {
-      // ১. আপনার তৈরি করা লোকাল সার্ভিস কল করা
+      // ১. লোকাল সার্ভিস কল
       StudentDataService.addStudent(student);
 
-      // ২. ফায়ারবেস ফায়ারস্টোরে ডাটা সেভ করা
+      // ২. ফায়ারবেস ফায়ারস্টোরে ডাটা সেভ করা (নতুন ফাইল প্যাথসহ)
       await FirebaseFirestore.instance.collection('students').doc(student.id).set({
         'id': student.id,
         'fullName': student.fullName,
@@ -66,17 +69,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'sscGpa': student.sscGpa,
         'hscGpa': student.hscGpa,
         'photoUrl': student.photoUrl,
+        'sscMarksheetPath': _sscPath, // নতুন যোগ করা হলো
+        'hscMarksheetPath': _hscPath, // নতুন যোগ করা হলো
         'status': 'pending',
         'digitalId': digitalId,
         'createdAt': student.createdAt,
       });
 
-      // সাকসেস হলে ডায়ালগ দেখানো
       if (!mounted) return;
       _showSuccessDialog(lang, digitalId);
 
     } catch (e) {
-      // এরর হ্যান্ডলিং
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
@@ -129,7 +132,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final lang = Provider.of<LanguageProvider>(context).languageCode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE), // হালকা নীলচে ব্যাকগ্রাউন্ড
+      backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
         title: Text(AppStrings.register[lang]!, 
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
@@ -146,23 +149,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _photoPicker(),
+                _photoPicker(lang), // ল্যাঙ্গুয়েজ পাস করা হলো
                 const SizedBox(height: 20),
                 
-                // Personal Info Section
                 _sectionHeader(Icons.person_pin_rounded, "Personal Information"),
                 _field(_name, AppStrings.name[lang]!, Icons.person_outline),
                 _field(_father, "Father's Name", Icons.family_restroom_outlined),
                 _field(_mother, "Mother's Name", Icons.family_restroom_outlined),
                 
                 const SizedBox(height: 10),
-                // Contact Section
                 _sectionHeader(Icons.contact_mail_rounded, "Contact Info"),
                 _field(_email, AppStrings.email[lang]!, Icons.email_outlined, type: TextInputType.emailAddress),
                 _field(_phone, AppStrings.phone[lang]!, Icons.phone_android_outlined, type: TextInputType.phone),
                 
                 const SizedBox(height: 10),
-                // Academic Section
                 _sectionHeader(Icons.school_rounded, "Academic Details"),
                 _departmentDropdown(),
                 Row(
@@ -172,7 +172,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Expanded(child: _field(_hsc, 'HSC GPA', Icons.grade_outlined, type: TextInputType.number)),
                   ],
                 ),
+
+                const SizedBox(height: 10),
+                // নতুন সার্টিফিকেট আপলোড সেকশন
+                _sectionHeader(Icons.file_copy_rounded, "Academic Documents (Optional)"),
+                _uploadBox(AppStrings.sscMarksheet[lang]!, _sscPath, (path) => setState(() => _sscPath = path)),
+                const SizedBox(height: 10),
+                _uploadBox(AppStrings.hscMarksheet[lang]!, _hscPath, (path) => setState(() => _hscPath = path)),
                 
+                const SizedBox(height: 15),
+                // ইংরেজি শর্ট নোট
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      AppStrings.optionalNote[lang]!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 30),
                 // Submit Button
                 Container(
@@ -211,7 +231,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // সেকশন হেডার উইজেট
   Widget _sectionHeader(IconData icon, String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12, top: 15),
@@ -222,6 +241,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Text(title, 
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo.shade700, letterSpacing: 0.5)),
         ],
+      ),
+    );
+  }
+
+  // আপলোড বক্স উইজেট (SSC/HSC এর জন্য)
+  Widget _uploadBox(String label, String path, Function(String) onSelected) {
+    return GestureDetector(
+      onTap: () {
+        // এখানে ফাইল পিকার লজিক কল হবে
+        onSelected('file_selected');
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: path.isEmpty ? Colors.grey.shade200 : Colors.green.shade300, width: 1.5),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+        ),
+        child: Row(
+          children: [
+            Icon(path.isEmpty ? Icons.upload_file : Icons.check_circle, 
+                 color: path.isEmpty ? Colors.indigo.shade300 : Colors.green),
+            const SizedBox(width: 15),
+            Text(label, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
+            const Spacer(),
+            if (path.isNotEmpty) const Icon(Icons.attach_file, size: 18, color: Colors.grey),
+          ],
+        ),
       ),
     );
   }
@@ -295,7 +343,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _photoPicker() {
+  Widget _photoPicker(String lang) {
     return Center(
       child: Column(
         children: [
@@ -333,8 +381,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           TextButton.icon(
             onPressed: () => setState(() => _photoPath = 'uploaded'),
             icon: const Icon(Icons.upload_file, size: 18),
-            label: const Text('Upload Student Photo', 
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            label: Text(AppStrings.uploadPhoto[lang]!, 
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             style: TextButton.styleFrom(foregroundColor: Colors.indigo),
           ),
         ],
