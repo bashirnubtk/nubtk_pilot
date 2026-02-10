@@ -132,6 +132,11 @@ git add .
 git commit -m "refactor: clean up lints, fix async gaps and update deprecated members in Login and Register screens"
 git push origin main
 
+
+git add .
+git commit -m "feat: implement Firebase Auth on registration and fix deprecated lints"
+git push origin main
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev
