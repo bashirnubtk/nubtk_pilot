@@ -137,6 +137,11 @@ git add .
 git commit -m "feat: implement Firebase Auth on registration and fix deprecated lints"
 git push origin main
 
+
+git add .
+git commit -m "feat: integrate live firestore stream for student dashboard and fix lints"
+git push origin main
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev
