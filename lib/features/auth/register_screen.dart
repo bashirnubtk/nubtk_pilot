@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart'; // নতুন: ফাইল পিকার
 import '../../core/constants/app_strings.dart';
 import '../home/home_screen.dart';
 import '../student/student_model.dart';
@@ -28,11 +29,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   String? _selectedDept;
   String _photoPath = '';
-  // নতুন ফাইল প্যাথ ভ্যারিয়েবল
   String _sscPath = '';
   String _hscPath = '';
 
   final List<String> departments = ['CSE', 'EEE', 'BBA', 'English', 'Law'];
+
+  // --- নতুন ফাংশন: গ্যালারি থেকে ফাইল সিলেক্ট করা ---
+  Future<void> _pickFile(String type) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: type == 'photo' ? FileType.image : FileType.custom,
+        allowedExtensions: type == 'photo' ? null : ['jpg', 'jpeg', 'png', 'pdf'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          if (type == 'photo') {
+            _photoPath = result.files.single.path!;
+          } else if (type == 'ssc') {
+            _sscPath = result.files.single.path!;
+          } else if (type == 'hsc') {
+            _hscPath = result.files.single.path!;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("File picking error: $e");
+    }
+  }
 
   // ফায়ারবেস এবং লোকাল ডাটাবেজে সাবমিট করার লজিক
   void _submit(String lang) async {
@@ -59,7 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // ১. লোকাল সার্ভিস কল
       StudentDataService.addStudent(student);
 
-      // ২. ফায়ারবেস ফায়ারস্টোরে ডাটা সেভ করা (নতুন ফাইল প্যাথসহ)
+      // ২. ফায়ারবেস ফায়ারস্টোরে ডাটা সেভ করা
       await FirebaseFirestore.instance.collection('students').doc(student.id).set({
         'id': student.id,
         'fullName': student.fullName,
@@ -69,8 +93,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'sscGpa': student.sscGpa,
         'hscGpa': student.hscGpa,
         'photoUrl': student.photoUrl,
-        'sscMarksheetPath': _sscPath, // নতুন যোগ করা হলো
-        'hscMarksheetPath': _hscPath, // নতুন যোগ করা হলো
+        'sscMarksheetPath': _sscPath, 
+        'hscMarksheetPath': _hscPath, 
         'status': 'pending',
         'digitalId': digitalId,
         'createdAt': student.createdAt,
@@ -149,7 +173,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _photoPicker(lang), // ল্যাঙ্গুয়েজ পাস করা হলো
+                _photoPicker(lang),
                 const SizedBox(height: 20),
                 
                 _sectionHeader(Icons.person_pin_rounded, "Personal Information"),
@@ -174,14 +198,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
 
                 const SizedBox(height: 10),
-                // নতুন সার্টিফিকেট আপলোড সেকশন
                 _sectionHeader(Icons.file_copy_rounded, "Academic Documents (Optional)"),
-                _uploadBox(AppStrings.sscMarksheet[lang]!, _sscPath, (path) => setState(() => _sscPath = path)),
+                _uploadBox(AppStrings.sscMarksheet[lang]!, _sscPath, () => _pickFile('ssc')),
                 const SizedBox(height: 10),
-                _uploadBox(AppStrings.hscMarksheet[lang]!, _hscPath, (path) => setState(() => _hscPath = path)),
+                _uploadBox(AppStrings.hscMarksheet[lang]!, _hscPath, () => _pickFile('hsc')),
                 
                 const SizedBox(height: 15),
-                // ইংরেজি শর্ট নোট
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -245,13 +267,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // আপলোড বক্স উইজেট (SSC/HSC এর জন্য)
-  Widget _uploadBox(String label, String path, Function(String) onSelected) {
+  Widget _uploadBox(String label, String path, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () {
-        // এখানে ফাইল পিকার লজিক কল হবে
-        onSelected('file_selected');
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         decoration: BoxDecoration(
@@ -265,19 +283,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Icon(path.isEmpty ? Icons.upload_file : Icons.check_circle, 
                  color: path.isEmpty ? Colors.indigo.shade300 : Colors.green),
             const SizedBox(width: 15),
-            Text(label, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
-            const Spacer(),
+            Expanded(child: Text(label, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500))),
             if (path.isNotEmpty) const Icon(Icons.attach_file, size: 18, color: Colors.grey),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 10),
-      child: Text(text, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.indigo.shade300)),
     );
   }
 
@@ -287,13 +297,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          )
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: TextFormField(
         controller: controller,
@@ -319,13 +323,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          )
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedDept,
@@ -353,9 +351,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.indigo.shade100, width: 3),
-                  boxShadow: [
-                    BoxShadow(color: Colors.indigo.withOpacity(0.1), blurRadius: 20, spreadRadius: 2)
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.indigo.withOpacity(0.1), blurRadius: 20, spreadRadius: 2)],
                 ),
                 child: CircleAvatar(
                   radius: 50,
@@ -379,7 +375,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(height: 10),
           TextButton.icon(
-            onPressed: () => setState(() => _photoPath = 'uploaded'),
+            onPressed: () => _pickFile('photo'),
             icon: const Icon(Icons.upload_file, size: 18),
             label: Text(AppStrings.uploadPhoto[lang]!, 
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),

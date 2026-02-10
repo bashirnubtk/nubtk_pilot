@@ -2,6 +2,10 @@ flutter create nubtk_pilot
 cd nubtk_pilot
 git init
 
+
+# প্রোজেক্ট শুরুর কমান্ড: প্রোজেক্ট শুরু করার সময় ডিফল্ট com.example ব্যবহার না করে আপনার অর্গানাইজেশন নাম দিয়ে শুরু করুন:
+flutter create --org com.yourdomain project_name
+
 git config --global user.email "bashircse.nubtk@gmail.com
 git config --global user.name "bashirnubtk
 
