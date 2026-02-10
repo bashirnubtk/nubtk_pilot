@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:file_picker/file_picker.dart'; // নতুন: ফাইল পিকার
+import 'package:firebase_auth/firebase_auth.dart'; // ✅ নতুন ইমপোর্ট
+import 'package:file_picker/file_picker.dart';
 import '../../core/constants/app_strings.dart';
 import '../home/home_screen.dart';
 import '../student/student_model.dart';
@@ -17,8 +18,9 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool isLoading = false; // ✅ লোডিং স্টেট যোগ করা হয়েছে
 
-  // Controllers (আপনার অরিজিনাল কন্ট্রোলারগুলো)
+  // Controllers
   final _name = TextEditingController();
   final _father = TextEditingController();
   final _mother = TextEditingController();
@@ -34,7 +36,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final List<String> departments = ['CSE', 'EEE', 'BBA', 'English', 'Law'];
 
-  // --- নতুন ফাংশন: গ্যালারি থেকে ফাইল সিলেক্ট করা ---
   Future<void> _pickFile(String type) async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -58,34 +59,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // ফায়ারবেস এবং লোকাল ডাটাবেজে সাবমিট করার লজিক
+  // ✅ আপডেট করা সাবমিট লজিক
   void _submit(String lang) async {
     if (!_formKey.currentState!.validate()) return;
-
-    // একটি ইউনিক ডিজিটাল আইডি জেনারেট করা
-    String digitalId = "NUBTK-${DateTime.now().millisecondsSinceEpoch}";
-
-    final student = StudentModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      fullName: _name.text,
-      email: _email.text,
-      phone: _phone.text,
-      department: _selectedDept ?? 'General',
-      sscGpa: double.tryParse(_ssc.text),
-      hscGpa: double.tryParse(_hsc.text),
-      photoUrl: _photoPath,
-      status: 'pending',
-      digitalId: digitalId, 
-      createdAt: DateTime.now(),
-    );
+    
+    setState(() => isLoading = true); // লোডিং শুরু
 
     try {
-      // ১. লোকাল সার্ভিস কল
+      // ১. জিপিটির শর্ত অনুযায়ী: আগে FirebaseAuth-এ অ্যাকাউন্ট তৈরি করা
+      // পাসওয়ার্ড হিসেবে সাময়িকভাবে ফোন নম্বর ব্যবহার করছি
+      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _email.text.trim(),
+        password: _phone.text.trim(), 
+      );
+
+      final String uid = userCredential.user!.uid; // ফায়ারবেস থেকে পাওয়া আসল UID
+      String digitalId = "NUBTK-${DateTime.now().millisecondsSinceEpoch}";
+
+      final student = StudentModel(
+        id: uid, // ✅ এখন থেকে UID-ই হবে স্টুডেন্ট আইডি
+        fullName: _name.text,
+        email: _email.text,
+        phone: _phone.text,
+        department: _selectedDept ?? 'General',
+        sscGpa: double.tryParse(_ssc.text),
+        hscGpa: double.tryParse(_hsc.text),
+        photoUrl: _photoPath,
+        status: 'pending',
+        digitalId: digitalId, 
+        createdAt: DateTime.now(),
+      );
+
+      // ২. লোকাল সার্ভিস কল (ঐচ্ছিক)
       StudentDataService.addStudent(student);
 
-      // ২. ফায়ারবেস ফায়ারস্টোরে ডাটা সেভ করা
-      await FirebaseFirestore.instance.collection('students').doc(student.id).set({
-        'id': student.id,
+      // ৩. ফায়ারবেস ফায়ারস্টোরে ডাটা সেভ করা (UID কে ডকুমেন্ট আইডি হিসেবে ব্যবহার করে)
+      await FirebaseFirestore.instance.collection('students').doc(uid).set({
+        'id': uid,
         'fullName': student.fullName,
         'email': student.email,
         'phone': student.phone,
@@ -101,16 +111,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       if (!mounted) return;
+      setState(() => isLoading = false);
       _showSuccessDialog(lang, digitalId);
 
+    } on FirebaseAuthException catch (e) {
+      setState(() => isLoading = false);
+      _showError(e.message ?? "Authentication failed");
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
+      setState(() => isLoading = false);
+      _showError("Error: $e");
     }
   }
 
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  }
+
+  // --- বাকি UI ডিজাইন একই থাকবে ---
+  // (স্মরণ করিয়ে দিচ্ছি: লিন্ট এরর এড়াতে withOpacity এর জায়গায় .withValues(alpha: ...) ব্যবহার করবেন)
+  
   void _showSuccessDialog(String lang, String digitalId) {
     showDialog(
       context: context,
@@ -227,21 +249,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.indigo.withOpacity(0.3),
+                        color: Colors.indigo.withValues(alpha: 0.3), // ✅ fixed deprecated lint
                         blurRadius: 12,
                         offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: ElevatedButton(
-                    onPressed: () => _submit(lang),
+                    onPressed: isLoading ? null : () => _submit(lang), // ✅ লোডিং থাকলে বাটন ডিজেবল
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                     ),
-                    child: const Text('Submit Application',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: isLoading 
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Submit Application',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -253,6 +277,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // --- Helper Widgets (আগের মতোই থাকবে) ---
   Widget _sectionHeader(IconData icon, String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12, top: 15),
@@ -276,7 +301,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: path.isEmpty ? Colors.grey.shade200 : Colors.green.shade300, width: 1.5),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10)], // ✅ fixed lint
         ),
         child: Row(
           children: [
@@ -297,7 +322,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 5))], // ✅ fixed lint
       ),
       child: TextFormField(
         controller: controller,
@@ -323,7 +348,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 5))], // ✅ fixed lint
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedDept,
@@ -351,7 +376,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.indigo.shade100, width: 3),
-                  boxShadow: [BoxShadow(color: Colors.indigo.withOpacity(0.1), blurRadius: 20, spreadRadius: 2)],
+                  boxShadow: [BoxShadow(color: Colors.indigo.withValues(alpha: 0.1), blurRadius: 20, spreadRadius: 2)], // ✅ fixed lint
                 ),
                 child: CircleAvatar(
                   radius: 50,
