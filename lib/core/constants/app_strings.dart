@@ -1,5 +1,5 @@
 class AppStrings {
-  // Splash & Language //ভাষা এবং টেক্সট ম্যানেজমেন্টের জন্য
+  // Splash & Language
   static const splashUniversityName = {
     'en': 'Northern University of\nBusiness & Technology Khulna',
     'bn': 'নর্দান ইউনিভার্সিটি বিজনেস ও টেকনোলজি খুলনা',
@@ -34,4 +34,12 @@ class AppStrings {
   static const universityWebsite = {'en': 'University Website', 'bn': 'ভার্সিটির ওয়েবসাইট'};
   static const resultPortal = {'en': 'Result Portal', 'bn': 'রেজাল্ট পোর্টাল'};
   static const askAIBot = {'en': '🤖 Ask AI Bot (Guest)', 'bn': '🤖 এআই বট জিজ্ঞাসা করুন'};
+
+  // --- Login System New Strings (নতুন যোগ করা হয়েছে) ---
+  static const studentLogin = {'en': 'Student Login', 'bn': 'ছাত্র লগইন'};
+  static const adminLogin = {'en': 'Admin Login', 'bn': 'অ্যাডমিন লগইন'};
+  static const emailOrUser = {'en': 'Email / Username', 'bn': 'ইমেইল / ইউজারনেম'};
+  static const passwordOrId = {'en': 'Digital ID / Password', 'bn': 'ডিজিটাল আইডি / পাসওয়ার্ড'};
+  static const invalidCreds = {'en': 'Invalid Credentials', 'bn': 'ভুল তথ্য দিয়েছেন'};
+  static const notApproved = {'en': 'Application not approved yet', 'bn': 'আবেদন এখনো অনুমোদিত হয়নি'};
 }

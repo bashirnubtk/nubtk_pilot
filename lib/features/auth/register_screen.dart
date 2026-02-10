@@ -16,6 +16,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  // Controllers
   final _name = TextEditingController();
   final _father = TextEditingController();
   final _mother = TextEditingController();
@@ -92,9 +93,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final lang = Provider.of<LanguageProvider>(context).languageCode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
+      backgroundColor: const Color(0xFFF8F9FE), // হালকা নীলচে ব্যাকগ্রাউন্ড
       appBar: AppBar(
-        title: Text(AppStrings.register[lang]!, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(AppStrings.register[lang]!, 
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -102,50 +104,88 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _photoPicker(),
-                const SizedBox(height: 25),
-                _buildLabel("Personal Information"),
+                const SizedBox(height: 20),
+                
+                // Personal Info Section
+                _sectionHeader(Icons.person_pin_rounded, "Personal Information"),
                 _field(_name, AppStrings.name[lang]!, Icons.person_outline),
                 _field(_father, "Father's Name", Icons.family_restroom_outlined),
                 _field(_mother, "Mother's Name", Icons.family_restroom_outlined),
-                _buildLabel("Contact Info"),
+                
+                const SizedBox(height: 10),
+                // Contact Section
+                _sectionHeader(Icons.contact_mail_rounded, "Contact Info"),
                 _field(_email, AppStrings.email[lang]!, Icons.email_outlined, type: TextInputType.emailAddress),
                 _field(_phone, AppStrings.phone[lang]!, Icons.phone_android_outlined, type: TextInputType.phone),
-                _buildLabel("Academic Details"),
+                
+                const SizedBox(height: 10),
+                // Academic Section
+                _sectionHeader(Icons.school_rounded, "Academic Details"),
                 _departmentDropdown(),
                 Row(
                   children: [
-                    Expanded(child: _field(_ssc, 'SSC GPA', Icons.school_outlined, type: TextInputType.number)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _field(_hsc, 'HSC GPA', Icons.history_edu_outlined, type: TextInputType.number)),
+                    Expanded(child: _field(_ssc, 'SSC GPA', Icons.grade_outlined, type: TextInputType.number)),
+                    const SizedBox(width: 15),
+                    Expanded(child: _field(_hsc, 'HSC GPA', Icons.grade_outlined, type: TextInputType.number)),
                   ],
                 ),
+                
                 const SizedBox(height: 30),
-                SizedBox(
+                // Submit Button
+                Container(
                   width: double.infinity,
-                  height: 58,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    gradient: const LinearGradient(
+                      colors: [Colors.indigo, Color(0xFF3F51B5)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.indigo.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
                   child: ElevatedButton(
                     onPressed: () => _submit(lang),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 5,
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                     ),
                     child: const Text('Submit Application',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 40),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // সেকশন হেডার উইজেট
+  Widget _sectionHeader(IconData icon, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 12, top: 15),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.indigo.shade400),
+          const SizedBox(width: 8),
+          Text(title, 
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo.shade700, letterSpacing: 0.5)),
+        ],
       ),
     );
   }
@@ -159,21 +199,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _field(TextEditingController controller, String label, IconData icon, {TextInputType type = TextInputType.text}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))],
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
+        ],
       ),
       child: TextFormField(
         controller: controller,
         keyboardType: type,
         validator: (v) => (v == null || v.isEmpty) && !label.contains('GPA') ? 'Required' : null,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: Colors.indigo.shade300),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-          contentPadding: const EdgeInsets.symmetric(vertical: 18),
+          labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+          prefixIcon: Icon(icon, color: Colors.indigo.shade300, size: 22),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.symmetric(vertical: 20),
+          filled: true,
+          fillColor: Colors.white,
         ),
       ),
     );
@@ -181,18 +231,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _departmentDropdown() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))],
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
+        ],
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedDept,
         decoration: InputDecoration(
           labelText: 'Select Department',
-          prefixIcon: Icon(Icons.apartment_rounded, color: Colors.indigo.shade300),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+          labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+          prefixIcon: Icon(Icons.apartment_rounded, color: Colors.indigo.shade300, size: 22),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
         ),
         items: departments.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
         onChanged: (v) => setState(() => _selectedDept = v),
@@ -205,16 +263,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Center(
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 45,
-            backgroundColor: Colors.indigo.withAlpha(15),
-            child: _photoPath.isEmpty
-                ? const Icon(Icons.camera_enhance_outlined, color: Colors.indigo, size: 35)
-                : const Icon(Icons.check, color: Colors.green),
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.indigo.shade100, width: 3),
+                  boxShadow: [
+                    BoxShadow(color: Colors.indigo.withOpacity(0.1), blurRadius: 20, spreadRadius: 2)
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  child: _photoPath.isEmpty
+                      ? Icon(Icons.add_a_photo_outlined, color: Colors.indigo.shade200, size: 40)
+                      : const Icon(Icons.check_circle, color: Colors.green, size: 50),
+                ),
+              ),
+              if (_photoPath.isNotEmpty)
+                const Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    radius: 15,
+                    child: Icon(Icons.check, color: Colors.green, size: 20),
+                  ),
+                ),
+            ],
           ),
-          TextButton(
+          const SizedBox(height: 10),
+          TextButton.icon(
             onPressed: () => setState(() => _photoPath = 'uploaded'),
-            child: const Text('Upload Photo', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+            icon: const Icon(Icons.upload_file, size: 18),
+            label: const Text('Upload Student Photo', 
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            style: TextButton.styleFrom(foregroundColor: Colors.indigo),
           ),
         ],
       ),

@@ -92,6 +92,12 @@ git add .
 git commit -m "feat: sync registration, admin, and data services with error fixes"
 git push origin dev 
 
+
+git add .
+git commit -m "feat: modernize register UI and implement login logic with synced data services"
+git push origin dev 
+
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev

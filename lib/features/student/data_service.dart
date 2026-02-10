@@ -3,17 +3,25 @@ import 'student_model.dart';
 class StudentDataService {
   static final List<StudentModel> _students = [];
 
-  // আবেদন জমা দেওয়া
   static void addStudent(StudentModel student) {
     _students.add(student);
   }
 
-  // শুধুমাত্র পেন্ডিং স্টুডেন্টদের লিস্ট পাওয়া
   static List<StudentModel> getPendingStudents() {
     return _students.where((s) => s.status == 'pending').toList();
   }
 
-  // স্ট্যাটাস আপডেট করা (Approve/Reject)
+  // লগইন চেক করার মেথড
+  static StudentModel? loginStudent(String email, String digitalId) {
+    try {
+      return _students.firstWhere(
+        (s) => s.email.trim() == email.trim() && s.digitalId.trim() == digitalId.trim(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   static void updateStatus(String studentId, String newStatus) {
     final index = _students.indexWhere((s) => s.id == studentId);
     if (index != -1) {
@@ -34,7 +42,6 @@ class StudentDataService {
     }
   }
 
-  // ডিজিটাল আইডি জেনারেশন
   static String _generateDigitalId(StudentModel student) {
     final year = DateTime.now().year;
     final last4 = student.phone.length >= 4 
