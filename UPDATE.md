@@ -3,6 +3,9 @@ cd nubtk_pilot
 git init
 
 
+https://console.firebase.google.com/u/0/project/nubtk-pilot/settings/general/android:com.nubtk.pilot
+
+
 # প্রোজেক্ট শুরুর কমান্ড: প্রোজেক্ট শুরু করার সময় ডিফল্ট com.example ব্যবহার না করে আপনার অর্গানাইজেশন নাম দিয়ে শুরু করুন:
 flutter create --org com.yourdomain project_name
 
@@ -118,6 +121,11 @@ git push origin dev
 
 03:15:26
 10/02/2026
+
+
+git add .
+git commit -m "feat: integrate Firestore for Admin approval and Student login with status guard"
+git push origin main
 
 
 প্রজেক্টের শেষে
