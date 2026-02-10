@@ -1,17 +1,14 @@
 class StudentModel {
-  final String id; // auto generate later (Firebase / backend)
+  final String id;
   final String fullName;
   final String email;
   final String phone;
   final String department;
-
   final double? sscGpa;
   final double? hscGpa;
-
-  final String photoUrl; // later from Firebase Storage
-  final String status; // pending | approved | rejected
-  final String digitalId; // generated after approval
-
+  final String photoUrl;
+  final String status;
+  final String digitalId;
   final DateTime createdAt;
 
   StudentModel({
@@ -28,7 +25,6 @@ class StudentModel {
     required this.createdAt,
   });
 
-  /// 🔹 Convert object → Map (for Firebase / API)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -45,7 +41,6 @@ class StudentModel {
     };
   }
 
-  /// 🔹 Convert Map → object (from Firebase / API)
   factory StudentModel.fromMap(Map<String, dynamic> map) {
     return StudentModel(
       id: map['id'] ?? '',
@@ -53,16 +48,12 @@ class StudentModel {
       email: map['email'] ?? '',
       phone: map['phone'] ?? '',
       department: map['department'] ?? '',
-      sscGpa: map['sscGpa'] != null
-          ? double.tryParse(map['sscGpa'].toString())
-          : null,
-      hscGpa: map['hscGpa'] != null
-          ? double.tryParse(map['hscGpa'].toString())
-          : null,
+      sscGpa: map['sscGpa'] != null ? double.tryParse(map['sscGpa'].toString()) : null,
+      hscGpa: map['hscGpa'] != null ? double.tryParse(map['hscGpa'].toString()) : null,
       photoUrl: map['photoUrl'] ?? '',
       status: map['status'] ?? 'pending',
       digitalId: map['digitalId'] ?? '',
-      createdAt: DateTime.tryParse(map['createdAt'] ?? '') ?? DateTime.now(),
+      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now(),
     );
   }
 }

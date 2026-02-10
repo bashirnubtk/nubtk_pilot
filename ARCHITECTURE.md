@@ -21,6 +21,8 @@ nubtk_pilot/
     │   │     ├──student_model.dart  
     │   │     ├──data_service.dart
     │   ├── admin/
+    |   |    ├──admin_screen.dart
+             └── admin_data_service.dart
     │   ├── ai_bot/
     │   ├── payment/
     │   └── cv_builder/

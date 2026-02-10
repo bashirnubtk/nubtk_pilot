@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_strings.dart';
-import '../home/language/language_provider.dart';
 import '../home/home_screen.dart';
+import '../student/student_model.dart';
+import '../student/data_service.dart';
+import '../home/language/language_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -13,73 +15,81 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _sscController = TextEditingController();
-  final _hscController = TextEditingController();
 
-  String? _selectedDepartment;
-  final List<String> _departments = [
-    'Computer Science & Engineering',
-    'Business Administration',
-    'English',
-    'Law',
-    'EEE',
-  ];
+  final _name = TextEditingController();
+  final _father = TextEditingController();
+  final _mother = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  final _ssc = TextEditingController();
+  final _hsc = TextEditingController();
+
+  String? _selectedDept;
+  String _photoPath = '';
+
+  final List<String> departments = ['CSE', 'EEE', 'BBA', 'English', 'Law'];
 
   void _submit(String lang) {
-    if (_formKey.currentState!.validate()) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.green, size: 70),
-              const SizedBox(height: 20),
-              Text(
-                AppStrings.regSuccess[lang]!,
+    if (!_formKey.currentState!.validate()) return;
+
+    final student = StudentModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      fullName: _name.text,
+      email: _email.text,
+      phone: _phone.text,
+      department: _selectedDept ?? 'General',
+      sscGpa: double.tryParse(_ssc.text),
+      hscGpa: double.tryParse(_hsc.text),
+      photoUrl: _photoPath,
+      status: 'pending',
+      digitalId: '',
+      createdAt: DateTime.now(),
+    );
+
+    StudentDataService.addStudent(student);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 70),
+            const SizedBox(height: 20),
+            Text(AppStrings.regSuccess[lang]!,
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            Text(AppStrings.checkGmail[lang]!,
                 textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                AppStrings.checkGmail[lang]!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigo,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(AppStrings.close[lang]!, style: const TextStyle(color: Colors.white)),
+                style: TextStyle(color: Colors.grey.shade600)),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+                child: Text(AppStrings.close[lang]!, style: const TextStyle(color: Colors.white)),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final lang = context.watch<LanguageProvider>().languageCode;
+    final lang = Provider.of<LanguageProvider>(context).languageCode;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
@@ -98,30 +108,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPhotoPlaceholder(),
+                _photoPicker(),
                 const SizedBox(height: 25),
-                
-                _buildLabel("Personal Details"),
-                _inputField(_nameController, AppStrings.name[lang]!, Icons.person_outline),
-                _inputField(_emailController, AppStrings.email[lang]!, Icons.email_outlined, keyboard: TextInputType.emailAddress),
-                _inputField(_phoneController, AppStrings.phone[lang]!, Icons.phone_android_outlined, keyboard: TextInputType.phone),
-
-                _buildLabel("Academic Selection"),
-                _buildDropdown(),
-
-                _buildLabel("Results (Optional)"),
+                _buildLabel("Personal Information"),
+                _field(_name, AppStrings.name[lang]!, Icons.person_outline),
+                _field(_father, "Father's Name", Icons.family_restroom_outlined),
+                _field(_mother, "Mother's Name", Icons.family_restroom_outlined),
+                _buildLabel("Contact Info"),
+                _field(_email, AppStrings.email[lang]!, Icons.email_outlined, type: TextInputType.emailAddress),
+                _field(_phone, AppStrings.phone[lang]!, Icons.phone_android_outlined, type: TextInputType.phone),
+                _buildLabel("Academic Details"),
+                _departmentDropdown(),
                 Row(
                   children: [
-                    Expanded(child: _inputField(_sscController, 'SSC GPA', Icons.school_outlined, keyboard: TextInputType.number)),
+                    Expanded(child: _field(_ssc, 'SSC GPA', Icons.school_outlined, type: TextInputType.number)),
                     const SizedBox(width: 12),
-                    Expanded(child: _inputField(_hscController, 'HSC GPA', Icons.history_edu_outlined, keyboard: TextInputType.number)),
+                    Expanded(child: _field(_hsc, 'HSC GPA', Icons.history_edu_outlined, type: TextInputType.number)),
                   ],
                 ),
-
                 const SizedBox(height: 30),
                 SizedBox(
                   width: double.infinity,
-                  height: 56,
+                  height: 58,
                   child: ElevatedButton(
                     onPressed: () => _submit(lang),
                     style: ElevatedButton.styleFrom(
@@ -129,10 +137,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 5,
                     ),
-                    child: Text(
-                      AppStrings.register[lang]!,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
+                    child: const Text('Submit Application',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -144,33 +150,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildPhotoPlaceholder() {
-    return Center(
-      child: Stack(
-        children: [
-          Container(
-            height: 100,
-            width: 100,
-            decoration: BoxDecoration(
-              color: Colors.indigo.withAlpha(20),
-              shape: BoxShape.circle, // ফিক্সড: BoxCircle এর বদলে BoxShape.circle
-            ),
-            child: const Icon(Icons.person, color: Colors.indigo, size: 50),
-          ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.indigo,
-              child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8, top: 10),
@@ -178,7 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _inputField(TextEditingController controller, String label, IconData icon, {TextInputType? keyboard}) {
+  Widget _field(TextEditingController controller, String label, IconData icon, {TextInputType type = TextInputType.text}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
@@ -188,8 +167,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       child: TextFormField(
         controller: controller,
-        keyboardType: keyboard,
-        validator: (v) => (label.contains('GPA') == false && (v == null || v.isEmpty)) ? 'Required' : null,
+        keyboardType: type,
+        validator: (v) => (v == null || v.isEmpty) && !label.contains('GPA') ? 'Required' : null,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: Colors.indigo.shade300),
@@ -200,7 +179,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildDropdown() {
+  Widget _departmentDropdown() {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
@@ -209,15 +188,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
         boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: DropdownButtonFormField<String>(
-        value: _selectedDepartment,
+        value: _selectedDept,
         decoration: InputDecoration(
           labelText: 'Select Department',
           prefixIcon: Icon(Icons.apartment_rounded, color: Colors.indigo.shade300),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
         ),
-        items: _departments.map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 14)))).toList(),
-        onChanged: (v) => setState(() => _selectedDepartment = v),
+        items: departments.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+        onChanged: (v) => setState(() => _selectedDept = v),
         validator: (v) => v == null ? 'Required' : null,
+      ),
+    );
+  }
+
+  Widget _photoPicker() {
+    return Center(
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 45,
+            backgroundColor: Colors.indigo.withAlpha(15),
+            child: _photoPath.isEmpty
+                ? const Icon(Icons.camera_enhance_outlined, color: Colors.indigo, size: 35)
+                : const Icon(Icons.check, color: Colors.green),
+          ),
+          TextButton(
+            onPressed: () => setState(() => _photoPath = 'uploaded'),
+            child: const Text('Upload Photo', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+          ),
+        ],
       ),
     );
   }

@@ -83,6 +83,15 @@ git add .
 git commit -m "fix: resolve UI warnings and implement home to register navigation"
 git push origin dev
 
+git add .
+git commit -m "added student model, admission logic and data service simulation"
+git push origin main
+
+
+git add .
+git commit -m "feat: sync registration, admin, and data services with error fixes"
+git push origin dev 
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev

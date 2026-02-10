@@ -1,5 +1,5 @@
 class AppStrings {
-  // Splash & Language
+  // Splash & Language //ভাষা এবং টেক্সট ম্যানেজমেন্টের জন্য
   static const splashUniversityName = {
     'en': 'Northern University of\nBusiness & Technology Khulna',
     'bn': 'নর্দান ইউনিভার্সিটি বিজনেস ও টেকনোলজি খুলনা',
@@ -20,11 +20,11 @@ class AppStrings {
   // Success Dialog & Action
   static const regSuccess = {
     'en': 'Application Submitted',
-    'bn': 'আবেদন জমা দেওয়া হয়েছে',
+    'bn': 'আবেদন জমা দেওয়া হয়েছে',
   };
   static const checkGmail = {
     'en': 'Your application is received. Please check Gmail after admin approval for your Digital ID.',
-    'bn': 'আপনার আবেদনটি গ্রহণ করা হয়েছে। অ্যাডমিন অনুমোদনের পর ডিজিটাল আইডির জন্য জিমেইল চেক করুন।',
+    'bn': 'আপনার আবেদনটি গ্রহণ করা হয়েছে। অ্যাডমিন অনুমোদনের পর ডিজিটাল আইডির জন্য জিমেইল চেক করুন।',
   };
   static const close = {'en': 'Close', 'bn': 'বন্ধ করুন'};
 
