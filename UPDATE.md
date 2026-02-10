@@ -98,6 +98,12 @@ git commit -m "feat: modernize register UI and implement login logic with synced
 git push origin dev 
 
 
+
+# ফায়ারবেস ইন্টিগ্রেশন এবং প্যাকেজ ফিক্সের জন্য কমেন্ট
+git add .
+git commit -m "feat: integrate firebase core, auth, and firestore with version conflict resolution"
+git push origin dev
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "455490818612",
+    "project_id": "nubtk-pilot",
+    "storage_bucket": "nubtk-pilot.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:455490818612:android:315d73e66bd7206ee5f061",
+        "android_client_info": {
+          "package_name": "com.nubtk.pilot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "455490818612-o3i6skhk6q8du52u07pfk1hl40f16vel.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKLZ8PyLrTPhVdAxVWtUWkyDXWcu4_vo4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "455490818612-o3i6skhk6q8du52u07pfk1hl40f16vel.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

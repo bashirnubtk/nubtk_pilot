@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // ফায়ারবেস ক্লাউড স্টোর ইম্পোর্ট
 import '../../core/constants/app_strings.dart';
 import '../home/home_screen.dart';
 import '../student/student_model.dart';
@@ -16,7 +17,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
+  // Controllers (আপনার অরিজিনাল কন্ট্রোলারগুলো)
   final _name = TextEditingController();
   final _father = TextEditingController();
   final _mother = TextEditingController();
@@ -30,8 +31,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final List<String> departments = ['CSE', 'EEE', 'BBA', 'English', 'Law'];
 
-  void _submit(String lang) {
+  // ফায়ারবেস এবং লোকাল ডাটাবেজে সাবমিট করার লজিক
+  void _submit(String lang) async {
     if (!_formKey.currentState!.validate()) return;
+
+    // একটি ইউনিক ডিজিটাল আইডি জেনারেট করা
+    String digitalId = "NUBTK-${DateTime.now().millisecondsSinceEpoch}";
 
     final student = StudentModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -43,12 +48,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
       hscGpa: double.tryParse(_hsc.text),
       photoUrl: _photoPath,
       status: 'pending',
-      digitalId: '',
+      digitalId: digitalId, // ডিজিটাল আইডি সেট করা হলো
       createdAt: DateTime.now(),
     );
 
-    StudentDataService.addStudent(student);
+    try {
+      // ১. আপনার তৈরি করা লোকাল সার্ভিস কল করা
+      StudentDataService.addStudent(student);
 
+      // ২. ফায়ারবেস ফায়ারস্টোরে ডাটা সেভ করা
+      await FirebaseFirestore.instance.collection('students').doc(student.id).set({
+        'id': student.id,
+        'fullName': student.fullName,
+        'email': student.email,
+        'phone': student.phone,
+        'department': student.department,
+        'sscGpa': student.sscGpa,
+        'hscGpa': student.hscGpa,
+        'photoUrl': student.photoUrl,
+        'status': 'pending',
+        'digitalId': digitalId,
+        'createdAt': student.createdAt,
+      });
+
+      // সাকসেস হলে ডায়ালগ দেখানো
+      if (!mounted) return;
+      _showSuccessDialog(lang, digitalId);
+
+    } catch (e) {
+      // এরর হ্যান্ডলিং
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _showSuccessDialog(String lang, String digitalId) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -63,7 +99,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            Text(AppStrings.checkGmail[lang]!,
+            Text("${AppStrings.checkGmail[lang]!}\nDigital ID: $digitalId",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey.shade600)),
             const SizedBox(height: 24),
