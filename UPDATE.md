@@ -19,6 +19,9 @@ git add .
 git commit -m "feat: initial project structure and splash screen implementation"
 git push origin dev
 
+git add .
+git commit -m "feat: add lock functionality to StudentMenuTile for status-based access control"
+git push origin dev
 
 
 
