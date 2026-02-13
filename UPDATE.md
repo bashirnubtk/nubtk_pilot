@@ -150,6 +150,11 @@ git add .
 git commit -m "feat: upgrade admin panel to real-time streams and sync with student dashboard"
 git push origin main
 
+
+git add .
+git commit -m "cleanup: remove unused platform folders (windows, linux, macos)"
+git push origin dev
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev
