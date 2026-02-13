@@ -38,16 +38,19 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
 
         if (role == 'student' && !_isAdminMode) {
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const StudentDashboardScreen()),
+            (route) => false,
           );
         } else if (role == 'admin' && _isAdminMode) {
+          // এডমিন প্যানেল ইমপ্লিমেন্ট না হওয়া পর্যন্ত এই মেসেজ দেখাবে যাতে স্ক্রিন কালো না হয়
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Welcome to Admin Panel!")),
+            const SnackBar(content: Text("Admin Login Successful!")),
           );
+          // এখানে আপনার Admin Dashboard থাকলে সেটা দিন
         } else {
-          throw Exception("Role mismatch! Please check your login mode.");
+          throw Exception("Role mismatch! Please check your login mode (Student/Admin).");
         }
       }
     } catch (e) {
@@ -61,7 +64,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ডাইনামিক কালার সিলেকশন যাতে গায়েব না হয়
     final Color primaryColor = _isAdminMode ? Colors.red.shade800 : const Color(0xFF4F46E5);
     final List<Color> gradientColors = _isAdminMode 
         ? [Colors.red.shade900, Colors.orange.shade800] 
@@ -92,9 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // স্টুডেন্ট/এডমিন সুইচ বাটন
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
@@ -110,55 +110,35 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  
-                  // আইকন পরিবর্তন লজিক
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: Icon(
                       _isAdminMode ? Icons.admin_panel_settings_rounded : Icons.school_rounded,
                       key: ValueKey(_isAdminMode),
-                      size: 90, 
+                      size: 80, 
                       color: Colors.white
                     ),
                   ),
                   const SizedBox(height: 15),
                   Text(
                     _isAdminMode ? "ADMIN PORTAL" : "STUDENT PORTAL",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 40),
-
-                  // লগইন কার্ড (আকর্ষণীয় ডিজাইন)
                   Container(
                     padding: const EdgeInsets.all(25),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(40),
-                          blurRadius: 25,
-                          offset: const Offset(0, 10),
-                        )
-                      ],
                     ),
                     child: Column(
                       children: [
                         TextField(
                           controller: _email,
                           decoration: InputDecoration(
-                            labelText: _isAdminMode ? "Admin Email" : "Student Email",
-                            prefixIcon: Icon(_isAdminMode ? Icons.security : Icons.email_outlined, color: primaryColor),
+                            labelText: "Email Address",
+                            prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide(color: primaryColor, width: 2),
-                            ),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -167,16 +147,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
                             labelText: "Password",
-                            prefixIcon: Icon(Icons.lock_open_rounded, color: primaryColor),
+                            prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+                              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide: BorderSide(color: primaryColor, width: 2),
-                            ),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -189,11 +165,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   onPressed: _handleLogin,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primaryColor,
-                                    foregroundColor: Colors.white,
-                                    elevation: 5,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                                   ),
-                                  child: const Text("LOGIN NOW", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  child: const Text("LOGIN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                 ),
                               ),
                       ],
@@ -211,19 +185,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildModeButton(String title, bool isActive) {
     return GestureDetector(
       onTap: () => setState(() => _isAdminMode = (title == "Admin")),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
         decoration: BoxDecoration(
           color: isActive ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(25),
         ),
         child: Text(
           title,
-          style: TextStyle(
-            color: isActive ? Colors.black : Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: isActive ? Colors.black : Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );

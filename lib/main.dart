@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'features/home/language/language_provider.dart';
-import 'features/auth/login_screen.dart'; // লগইন স্ক্রিন ইমপোর্ট করুন
+import 'features/home/home_screen.dart'; // হোম স্ক্রিন ইমপোর্ট নিশ্চিত করুন
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,9 +24,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'NUBTK Pilot',
-      theme: ThemeData(primarySwatch: Colors.indigo),
-      // শুরুতে এখন লগইন স্ক্রিন দেখাবে
-      home: const LoginScreen(), 
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        useMaterial3: true,
+      ),
+      // অ্যাপ চালু হলে এখন আগের মতো HomeScreen আসবে
+      home: const HomeScreen(), 
     );
   }
 }

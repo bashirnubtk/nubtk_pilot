@@ -9,27 +9,37 @@ class AdminPaymentControl extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.calculate),
-        onPressed: () async {
-          // পেমেন্ট প্ল্যান তৈরি করা
-          await PaymentService.createPaymentPlan(
-            studentId: studentId,
-            grade: "A+",
-            totalCourseFee: 800000,
-          );
-          
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Payment Plan Generated Successfully!")),
-            );
-          }
-        },
-        label: const Text("Generate Payment Plan"),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          backgroundColor: Colors.indigo,
-          foregroundColor: Colors.white,
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.calculate),
+          onPressed: () async {
+            try {
+              await PaymentService.createPaymentPlan(
+                studentId: studentId,
+                grade: "A+", 
+                totalCourseFee: 800000,
+              );
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Payment Plan Generated!")),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Error: $e")),
+                );
+              }
+            }
+          },
+          label: const Text("Generate Payment Plan"),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            backgroundColor: Colors.indigo,
+            foregroundColor: Colors.white,
+          ),
         ),
       ),
     );
