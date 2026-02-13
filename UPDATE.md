@@ -159,6 +159,17 @@ git add .
 git commit -m "feat: implement semester payment plan, installment generator and fix photoUrl errors"
 git push origin dev
 
+
+git add .
+git commit -m "feat: implement auth system with dual-mode login and payment logic" -m "
+- Added Firebase Auth service for student registration and login.
+- Implemented professional UI for Login screen with Student/Admin toggle.
+- Added password visibility toggle and smooth theme switching.
+- Integrated automated semester-based payment plan generation (24 installments).
+- Fixed photoUrl and model mapping errors in AdminDataService.
+- Optimized app performance with flutter clean and code restructuring."
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

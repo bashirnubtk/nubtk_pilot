@@ -17,6 +17,9 @@ nubtk_pilot/
     │   ├── language/
     │   │   └── language_selection_screen.dart
     │   ├── auth/
+    |   |   ├── auth_service.dart  
+    |   |   ├── login_screen.dart  
+    |   |   ├── register_screen.dart     
     ├── student/
     │   ├──student_services\
     │   ├── student_model.dart
