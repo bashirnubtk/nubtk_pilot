@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import '../student/student_dashboard_screen.dart';
+import '../admin/admin_screen.dart'; 
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +20,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isAdminMode = false;
 
   void _handleLogin() async {
-    if (_email.text.trim().isEmpty || _password.text.trim().isEmpty) {
+    final String emailInput = _email.text.trim();
+    final String passInput = _password.text.trim();
+
+    // ১. খালি ইনপুট চেক
+    if (emailInput.isEmpty || passInput.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter both email and password")),
       );
@@ -27,10 +32,23 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _loading = true);
+
     try {
+      // ২. অ্যাডমিন হার্ডকোডেড লগইন (ফায়ারবেসকে বাইপাস করবে)
+      if (_isAdminMode && emailInput == "admin" && passInput == "admin@123") {
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminScreen()),
+          (route) => false,
+        );
+        return; // এখানেই কাজ শেষ, নিচের ফায়ারবেস লজিক আর রান হবে না
+      }
+
+      // ৩. ফায়ারবেস অথেন্টিকেশন (স্টুডেন্ট বা অন্য ইউজারদের জন্য)
       final user = await _auth.login(
-        email: _email.text.trim(),
-        password: _password.text.trim(),
+        email: emailInput,
+        password: passInput,
       );
 
       if (user != null) {
@@ -44,16 +62,17 @@ class _LoginScreenState extends State<LoginScreen> {
             (route) => false,
           );
         } else if (role == 'admin' && _isAdminMode) {
-          // এডমিন প্যানেল ইমপ্লিমেন্ট না হওয়া পর্যন্ত এই মেসেজ দেখাবে যাতে স্ক্রিন কালো না হয়
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Admin Login Successful!")),
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminScreen()),
+            (route) => false,
           );
-          // এখানে আপনার Admin Dashboard থাকলে সেটা দিন
         } else {
-          throw Exception("Role mismatch! Please check your login mode (Student/Admin).");
+          throw Exception("Role mismatch! Please check your login mode.");
         }
       }
     } catch (e) {
+      // ফায়ারবেস থেকে আসা এরর মেসেজ হ্যান্ডলিং
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
       );
@@ -64,27 +83,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final Color primaryColor = _isAdminMode ? Colors.red.shade800 : const Color(0xFF4F46E5);
-    final List<Color> gradientColors = _isAdminMode 
-        ? [Colors.red.shade900, Colors.orange.shade800] 
-        : [const Color(0xFF6366F1), const Color(0xFF4F46E5)];
-
+    
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: gradientColors,
+            colors: _isAdminMode 
+                ? [Colors.red.shade900, Colors.orange.shade800] 
+                : [const Color(0xFF6366F1), const Color(0xFF4F46E5)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -92,13 +103,15 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+              padding: const EdgeInsets.symmetric(horizontal: 25),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // মোড সিলেকশন বাটন (Student/Admin)
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(50),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Row(
@@ -109,39 +122,44 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: Icon(
-                      _isAdminMode ? Icons.admin_panel_settings_rounded : Icons.school_rounded,
-                      key: ValueKey(_isAdminMode),
-                      size: 80, 
-                      color: Colors.white
-                    ),
+                  SizedBox(height: size.height * 0.03), 
+                  Icon(
+                    _isAdminMode ? Icons.admin_panel_settings_rounded : Icons.school_rounded,
+                    size: 70, 
+                    color: Colors.white
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 10),
                   Text(
                     _isAdminMode ? "ADMIN PORTAL" : "STUDENT PORTAL",
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 25),
+                  // লগইন কার্ড
                   Container(
-                    padding: const EdgeInsets.all(25),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        )
+                      ]
                     ),
                     child: Column(
                       children: [
                         TextField(
                           controller: _email,
                           decoration: InputDecoration(
-                            labelText: "Email Address",
-                            prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
+                            labelText: _isAdminMode ? "Username" : "Email Address",
+                            prefixIcon: Icon(Icons.person_outline, color: primaryColor),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 15),
                         TextField(
                           controller: _password,
                           obscureText: _obscurePassword,
@@ -153,19 +171,21 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 25),
                         _loading
                             ? CircularProgressIndicator(color: primaryColor)
                             : SizedBox(
                                 width: double.infinity,
-                                height: 55,
+                                height: 50,
                                 child: ElevatedButton(
                                   onPressed: _handleLogin,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primaryColor,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                    elevation: 2,
                                   ),
                                   child: const Text("LOGIN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                 ),
@@ -173,6 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20), 
                 ],
               ),
             ),
@@ -184,16 +205,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildModeButton(String title, bool isActive) {
     return GestureDetector(
-      onTap: () => setState(() => _isAdminMode = (title == "Admin")),
+      onTap: () => setState(() {
+        _isAdminMode = (title == "Admin");
+        _email.clear();
+        _password.clear();
+      }),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
         decoration: BoxDecoration(
           color: isActive ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(25),
         ),
         child: Text(
           title,
-          style: TextStyle(color: isActive ? Colors.black : Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: isActive ? Colors.black : Colors.white, 
+            fontWeight: FontWeight.bold, 
+            fontSize: 13
+          ),
         ),
       ),
     );

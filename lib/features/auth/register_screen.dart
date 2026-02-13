@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // ✅ নতুন ইমপোর্ট
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/constants/app_strings.dart';
 import '../home/home_screen.dart';
@@ -18,7 +18,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  bool isLoading = false; // ✅ লোডিং স্টেট যোগ করা হয়েছে
+  bool _isLoading = false;
 
   // Controllers
   final _name = TextEditingController();
@@ -59,25 +59,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // ✅ আপডেট করা সাবমিট লজিক
   void _submit(String lang) async {
     if (!_formKey.currentState!.validate()) return;
     
-    setState(() => isLoading = true); // লোডিং শুরু
+    setState(() => _isLoading = true); 
 
     try {
-      // ১. জিপিটির শর্ত অনুযায়ী: আগে FirebaseAuth-এ অ্যাকাউন্ট তৈরি করা
-      // পাসওয়ার্ড হিসেবে সাময়িকভাবে ফোন নম্বর ব্যবহার করছি
+      // ১. FirebaseAuth-এ অ্যাকাউন্ট তৈরি (পাসওয়ার্ড হিসেবে ফোন নম্বর)
       final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _email.text.trim(),
         password: _phone.text.trim(), 
       );
 
-      final String uid = userCredential.user!.uid; // ফায়ারবেস থেকে পাওয়া আসল UID
+      final String uid = userCredential.user!.uid; 
       String digitalId = "NUBTK-${DateTime.now().millisecondsSinceEpoch}";
 
       final student = StudentModel(
-        id: uid, // ✅ এখন থেকে UID-ই হবে স্টুডেন্ট আইডি
+        id: uid, 
         fullName: _name.text,
         email: _email.text,
         phone: _phone.text,
@@ -90,15 +88,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         createdAt: DateTime.now(),
       );
 
-      // ২. লোকাল সার্ভিস কল (ঐচ্ছিক)
-      StudentDataService.addStudent(student);
-
-      // ৩. ফায়ারবেস ফায়ারস্টোরে ডাটা সেভ করা (UID কে ডকুমেন্ট আইডি হিসেবে ব্যবহার করে)
+      // ২. ফায়ারস্টোরে ডাটা সেভ (অবশ্যই await করতে হবে)
       await FirebaseFirestore.instance.collection('students').doc(uid).set({
         'id': uid,
         'fullName': student.fullName,
         'email': student.email,
         'phone': student.phone,
+        'role': 'student', // এটি পরে অ্যাডমিন প্যানেলে ফিল্টার করতে সাহায্য করবে
         'department': student.department,
         'sscGpa': student.sscGpa,
         'hscGpa': student.hscGpa,
@@ -111,14 +107,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       if (!mounted) return;
-      setState(() => isLoading = false);
+      setState(() => _isLoading = false); // কাজ শেষ হলে লোডিং বন্ধ
       _showSuccessDialog(lang, digitalId);
 
     } on FirebaseAuthException catch (e) {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
       _showError(e.message ?? "Authentication failed");
     } catch (e) {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
       _showError("Error: $e");
     }
   }
@@ -130,9 +126,217 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // --- বাকি UI ডিজাইন একই থাকবে ---
-  // (স্মরণ করিয়ে দিচ্ছি: লিন্ট এরর এড়াতে withOpacity এর জায়গায় .withValues(alpha: ...) ব্যবহার করবেন)
-  
+  @override
+  Widget build(BuildContext context) {
+    final lang = Provider.of<LanguageProvider>(context).languageCode;
+    
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // কাস্টম অ্যাপ বার ডিজাইন
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        "Registration",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 48), // ব্যালেন্সের জন্য
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF8F9FE),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(40),
+                      topRight: Radius.circular(40),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          _photoPicker(lang),
+                          const SizedBox(height: 30),
+                          _buildCardSection("Personal Information", [
+                            _field(_name, "Full Name", Icons.person_outline),
+                            _field(_father, "Father's Name", Icons.family_restroom_outlined),
+                            _field(_mother, "Mother's Name", Icons.family_restroom_outlined),
+                          ]),
+                          const SizedBox(height: 20),
+                          _buildCardSection("Contact & Academic", [
+                            _field(_email, "Email Address", Icons.email_outlined, type: TextInputType.emailAddress),
+                            _field(_phone, "Phone Number", Icons.phone_android_outlined, type: TextInputType.phone),
+                            _departmentDropdown(),
+                            Row(
+                              children: [
+                                Expanded(child: _field(_ssc, 'SSC GPA', Icons.grade_outlined, type: TextInputType.number)),
+                                const SizedBox(width: 15),
+                                Expanded(child: _field(_hsc, 'HSC GPA', Icons.grade_outlined, type: TextInputType.number)),
+                              ],
+                            ),
+                          ]),
+                          const SizedBox(height: 20),
+                          _buildCardSection("Documents", [
+                            _uploadBox("SSC Marksheet", _sscPath, () => _pickFile('ssc')),
+                            const SizedBox(height: 12),
+                            _uploadBox("HSC Marksheet", _hscPath, () => _pickFile('hsc')),
+                          ]),
+                          const SizedBox(height: 40),
+                          // সাবমিট বাটন
+                          SizedBox(
+                            width: double.infinity,
+                            height: 55,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : () => _submit(lang),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4F46E5),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                elevation: 4,
+                              ),
+                              child: _isLoading 
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : const Text("SUBMIT APPLICATION", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                            ),
+                          ),
+                          const SizedBox(height: 50),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ডিজাইন উন্নত করার জন্য কাস্টম কার্ড সেকশন
+  Widget _buildCardSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 10),
+          child: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo.shade900)),
+        ),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 15, offset: const Offset(0, 8))],
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+
+  // ইমপুট ফিল্ড ডিজাইন (Login এর সাথে সামঞ্জস্য রেখে)
+  Widget _field(TextEditingController controller, String label, IconData icon, {TextInputType type = TextInputType.text}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: type,
+        validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.indigo.shade300),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+        ),
+      ),
+    );
+  }
+
+  Widget _departmentDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: DropdownButtonFormField<String>(
+        value: _selectedDept,
+        decoration: InputDecoration(
+          labelText: 'Department',
+          prefixIcon: Icon(Icons.business, color: Colors.indigo.shade300),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+        ),
+        items: departments.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+        onChanged: (v) => setState(() => _selectedDept = v),
+        validator: (v) => v == null ? 'Required' : null,
+      ),
+    );
+  }
+
+  Widget _uploadBox(String label, String path, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+        decoration: BoxDecoration(
+          border: Border.all(color: path.isEmpty ? Colors.grey.shade300 : Colors.green),
+          borderRadius: BorderRadius.circular(15),
+          color: path.isEmpty ? Colors.transparent : Colors.green.withAlpha(10),
+        ),
+        child: Row(
+          children: [
+            Icon(path.isEmpty ? Icons.cloud_upload_outlined : Icons.check_circle, color: path.isEmpty ? Colors.grey : Colors.green),
+            const SizedBox(width: 10),
+            Text(label, style: TextStyle(color: path.isEmpty ? Colors.grey.shade700 : Colors.green.shade700)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _photoPicker(String lang) {
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 50,
+          backgroundColor: Colors.indigo.shade50,
+          backgroundImage: _photoPath.isNotEmpty ? AssetImage(_photoPath) : null,
+          child: _photoPath.isEmpty ? Icon(Icons.add_a_photo, size: 40, color: Colors.indigo.shade200) : null,
+        ),
+        TextButton(
+          onPressed: () => _pickFile('photo'),
+          child: const Text("Upload Student Photo", style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+
   void _showSuccessDialog(String lang, String digitalId) {
     showDialog(
       context: context,
@@ -144,13 +348,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             const Icon(Icons.check_circle_rounded, color: Colors.green, size: 70),
             const SizedBox(height: 20),
-            Text(AppStrings.regSuccess[lang]!,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                textAlign: TextAlign.center),
+            const Text("Application Submitted!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 12),
-            Text("${AppStrings.checkGmail[lang]!}\nDigital ID: $digitalId",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600)),
+            Text("Your Digital ID: $digitalId\nPlease wait for admin approval.", textAlign: TextAlign.center),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -159,254 +359,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Navigator.pop(context);
                   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text(AppStrings.close[lang]!, style: const TextStyle(color: Colors.white)),
+                child: const Text("Close"),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final lang = Provider.of<LanguageProvider>(context).languageCode;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
-      appBar: AppBar(
-        title: Text(AppStrings.register[lang]!, 
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.indigo.shade900,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _photoPicker(lang),
-                const SizedBox(height: 20),
-                
-                _sectionHeader(Icons.person_pin_rounded, "Personal Information"),
-                _field(_name, AppStrings.name[lang]!, Icons.person_outline),
-                _field(_father, "Father's Name", Icons.family_restroom_outlined),
-                _field(_mother, "Mother's Name", Icons.family_restroom_outlined),
-                
-                const SizedBox(height: 10),
-                _sectionHeader(Icons.contact_mail_rounded, "Contact Info"),
-                _field(_email, AppStrings.email[lang]!, Icons.email_outlined, type: TextInputType.emailAddress),
-                _field(_phone, AppStrings.phone[lang]!, Icons.phone_android_outlined, type: TextInputType.phone),
-                
-                const SizedBox(height: 10),
-                _sectionHeader(Icons.school_rounded, "Academic Details"),
-                _departmentDropdown(),
-                Row(
-                  children: [
-                    Expanded(child: _field(_ssc, 'SSC GPA', Icons.grade_outlined, type: TextInputType.number)),
-                    const SizedBox(width: 15),
-                    Expanded(child: _field(_hsc, 'HSC GPA', Icons.grade_outlined, type: TextInputType.number)),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-                _sectionHeader(Icons.file_copy_rounded, "Academic Documents (Optional)"),
-                _uploadBox(AppStrings.sscMarksheet[lang]!, _sscPath, () => _pickFile('ssc')),
-                const SizedBox(height: 10),
-                _uploadBox(AppStrings.hscMarksheet[lang]!, _hscPath, () => _pickFile('hsc')),
-                
-                const SizedBox(height: 15),
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(
-                      AppStrings.optionalNote[lang]!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-                // Submit Button
-                Container(
-                  width: double.infinity,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    gradient: const LinearGradient(
-                      colors: [Colors.indigo, Color(0xFF3F51B5)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.indigo.withValues(alpha: 0.3), // ✅ fixed deprecated lint
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : () => _submit(lang), // ✅ লোডিং থাকলে বাটন ডিজেবল
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                    ),
-                    child: isLoading 
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Submit Application',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ),
-                ),
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --- Helper Widgets (আগের মতোই থাকবে) ---
-  Widget _sectionHeader(IconData icon, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12, top: 15),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.indigo.shade400),
-          const SizedBox(width: 8),
-          Text(title, 
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.indigo.shade700, letterSpacing: 0.5)),
-        ],
-      ),
-    );
-  }
-
-  Widget _uploadBox(String label, String path, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: path.isEmpty ? Colors.grey.shade200 : Colors.green.shade300, width: 1.5),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10)], // ✅ fixed lint
-        ),
-        child: Row(
-          children: [
-            Icon(path.isEmpty ? Icons.upload_file : Icons.check_circle, 
-                 color: path.isEmpty ? Colors.indigo.shade300 : Colors.green),
-            const SizedBox(width: 15),
-            Expanded(child: Text(label, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500))),
-            if (path.isNotEmpty) const Icon(Icons.attach_file, size: 18, color: Colors.grey),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _field(TextEditingController controller, String label, IconData icon, {TextInputType type = TextInputType.text}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 5))], // ✅ fixed lint
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: type,
-        validator: (v) => (v == null || v.isEmpty) && !label.contains('GPA') ? 'Required' : null,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-          prefixIcon: Icon(icon, color: Colors.indigo.shade300, size: 22),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
-          contentPadding: const EdgeInsets.symmetric(vertical: 20),
-          filled: true,
-          fillColor: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Widget _departmentDropdown() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 5))], // ✅ fixed lint
-      ),
-      child: DropdownButtonFormField<String>(
-        value: _selectedDept,
-        decoration: InputDecoration(
-          labelText: 'Select Department',
-          labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-          prefixIcon: Icon(Icons.apartment_rounded, color: Colors.indigo.shade300, size: 22),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
-          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
-        ),
-        items: departments.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-        onChanged: (v) => setState(() => _selectedDept = v),
-        validator: (v) => v == null ? 'Required' : null,
-      ),
-    );
-  }
-
-  Widget _photoPicker(String lang) {
-    return Center(
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.indigo.shade100, width: 3),
-                  boxShadow: [BoxShadow(color: Colors.indigo.withValues(alpha: 0.1), blurRadius: 20, spreadRadius: 2)], // ✅ fixed lint
-                ),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white,
-                  child: _photoPath.isEmpty
-                      ? Icon(Icons.add_a_photo_outlined, color: Colors.indigo.shade200, size: 40)
-                      : const Icon(Icons.check_circle, color: Colors.green, size: 50),
-                ),
-              ),
-              if (_photoPath.isNotEmpty)
-                const Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.white,
-                    radius: 15,
-                    child: Icon(Icons.check, color: Colors.green, size: 20),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          TextButton.icon(
-            onPressed: () => _pickFile('photo'),
-            icon: const Icon(Icons.upload_file, size: 18),
-            label: Text(AppStrings.uploadPhoto[lang]!, 
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            style: TextButton.styleFrom(foregroundColor: Colors.indigo),
-          ),
-        ],
       ),
     );
   }

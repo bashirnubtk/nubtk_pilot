@@ -8,12 +8,13 @@ class AdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: const Color(0xFFF4F7FE),
       appBar: AppBar(
         title: const Text('Admission Requests', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: Colors.indigo,
+        backgroundColor: Colors.indigo.shade800,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: StreamBuilder<List<StudentModel>>(
         stream: AdminDataService.getPendingStudentsStream(),
@@ -27,48 +28,24 @@ class AdminScreen extends StatelessWidget {
 
           final pendingStudents = snapshot.data ?? [];
           if (pendingStudents.isEmpty) {
-            return const Center(child: Text('No pending applications'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox_outlined, size: 80, color: Colors.grey.shade400),
+                  const SizedBox(height: 10),
+                  Text('No pending applications', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                ],
+              ),
+            );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             itemCount: pendingStudents.length,
             itemBuilder: (context, index) {
               final student = pendingStudents[index];
-              return Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(12),
-                  leading: CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.indigo.shade50,
-                    child: const Icon(Icons.person, color: Colors.indigo),
-                  ),
-                  title: Text(student.fullName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Dept: ${student.department}'),
-                      Text('Phone: ${student.phone}', style: const TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.check_circle, color: Colors.green, size: 30),
-                        onPressed: () => _showApproveDialog(context, student),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.cancel, color: Colors.red, size: 30),
-                        onPressed: () => _handleAction(context, student, 'reject'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              return _buildStudentCard(context, student);
             },
           );
         },
@@ -76,18 +53,63 @@ class AdminScreen extends StatelessWidget {
     );
   }
 
-  // অ্যাপ্রুভ করার আগে গ্রেড সিলেক্ট করার ডায়ালগ
+  Widget _buildStudentCard(BuildContext context, StudentModel student) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(15),
+        leading: CircleAvatar(
+          radius: 30,
+          backgroundColor: Colors.indigo.shade50,
+          backgroundImage: student.photoUrl.isNotEmpty ? NetworkImage(student.photoUrl) : null,
+          child: student.photoUrl.isEmpty ? const Icon(Icons.person, color: Colors.indigo) : null,
+        ),
+        title: Text(student.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        subtitle: Text('Dept: ${student.department}\nPhone: ${student.phone}', style: const TextStyle(height: 1.5)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _actionButton(Icons.check_circle, Colors.green, () => _showApproveDialog(context, student)),
+            const SizedBox(width: 8),
+            _actionButton(Icons.cancel, Colors.red, () => _handleAction(context, student, 'reject')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actionButton(IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(color: color.withAlpha(30), shape: BoxShape.circle),
+        child: Icon(icon, color: color, size: 28),
+      ),
+    );
+  }
+
   void _showApproveDialog(BuildContext context, StudentModel student) {
-    String selectedGrade = 'A+'; // ডিফল্ট গ্রেড
+    String selectedGrade = 'A+';
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text("Select Student Grade"),
         content: DropdownButtonFormField<String>(
           value: selectedGrade,
           items: ['A+', 'A', 'A-', 'B', 'C'].map((g) => DropdownMenuItem(value: g, child: Text("Grade $g"))).toList(),
           onChanged: (val) => selectedGrade = val!,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
@@ -96,7 +118,8 @@ class AdminScreen extends StatelessWidget {
               Navigator.pop(context);
               _handleAction(context, student, 'approve', grade: selectedGrade);
             },
-            child: const Text("Approve"),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text("Approve Student", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -105,20 +128,19 @@ class AdminScreen extends StatelessWidget {
 
   void _handleAction(BuildContext context, StudentModel student, String action, {String? grade}) async {
     if (action == 'approve') {
-      // এখানে grade প্যারামিটারটি পাঠানো হচ্ছে যা এরর দূর করবে
       await AdminDataService.approveStudent(student.id, grade: grade ?? 'A+');
       if (!context.mounted) return;
-      _showSnackBar(context, '${student.fullName} approved ✅', Colors.green);
+      _showSnackBar(context, '${student.fullName} Approved ✅', Colors.green);
     } else {
       await AdminDataService.rejectStudent(student.id);
       if (!context.mounted) return;
-      _showSnackBar(context, '${student.fullName} rejected ❌', Colors.red);
+      _showSnackBar(context, '${student.fullName} Rejected ❌', Colors.red);
     }
   }
 
   void _showSnackBar(BuildContext context, String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: color, duration: const Duration(seconds: 2)),
+      SnackBar(content: Text(msg), backgroundColor: color, behavior: SnackBarBehavior.floating),
     );
   }
 }
