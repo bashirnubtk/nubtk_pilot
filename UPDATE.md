@@ -27,6 +27,10 @@ git commit -m "feat: add lock functionality to StudentMenuTile for status-based 
 git push origin dev
 
 
+git add .
+git commit -m "feat: implement PDF generation and download for digital ID"
+git push origin main
+
 
 
 
@@ -140,6 +144,10 @@ git push origin main
 
 git add .
 git commit -m "feat: integrate live firestore stream for student dashboard and fix lints"
+git push origin main
+
+git add .
+git commit -m "feat: upgrade admin panel to real-time streams and sync with student dashboard"
 git push origin main
 
 প্রজেক্টের শেষে
