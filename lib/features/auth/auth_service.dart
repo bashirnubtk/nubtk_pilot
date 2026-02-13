@@ -5,7 +5,7 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // রেজিস্ট্রেশন করার সময় সরাসরি ফায়ারবেস অথেন্টিকেশনে ইউজার তৈরি হবে
+  // রেজিস্ট্রেশন: আপনার আগের সব প্যারামিটার ঠিক রাখা হয়েছে
   Future<String?> registerStudent({
     required String fullName,
     required String email,
@@ -15,11 +15,10 @@ class AuthService {
     required String photoUrl,
   }) async {
     try {
-      // ইউজার তৈরি করা (পাসওয়ার্ড হিসেবে ডিজিটাল আইডি ব্যবহার করা হচ্ছে)
+      // পাসওয়ার্ড হিসেবে ডিজিটাল আইডি ব্যবহার করা হচ্ছে
       UserCredential cred = await _auth.createUserWithEmailAndPassword(
           email: email, password: digitalId);
 
-      // ফায়ারস্টোরে স্টুডেন্টের বিস্তারিত তথ্য সেভ করা
       await _db.collection('students').doc(cred.user!.uid).set({
         'uid': cred.user!.uid,
         'fullName': fullName,
@@ -28,12 +27,13 @@ class AuthService {
         'department': department,
         'digitalId': digitalId,
         'photoUrl': photoUrl,
-        'status': 'pending',
+        'status': 'pending', // ডিফল্ট পেন্ডিং
+        'role': 'student',   // রোল ডিফাইন করা হলো
         'createdAt': FieldValue.serverTimestamp(),
       });
-      return null; // সফলতা
+      return null;
     } on FirebaseAuthException catch (e) {
-      return e.message; // এরর মেসেজ
+      return e.message;
     }
   }
 
@@ -48,13 +48,11 @@ class AuthService {
     }
   }
 
-  // রোল চেক করা (স্টুডেন্ট নাকি এডমিন)
+  // রোল চেক করা
   Future<String> getRole(String uid) async {
-    // প্রথমে স্টুডেন্ট কালেকশনে চেক করবে
     DocumentSnapshot doc = await _db.collection('students').doc(uid).get();
     if (doc.exists) return 'student';
 
-    // তারপর এডমিন কালেকশনে চেক করবে
     DocumentSnapshot adminDoc = await _db.collection('admins').doc(uid).get();
     if (adminDoc.exists) return 'admin';
 

@@ -203,10 +203,15 @@ git push origin dev
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
- git add .
-
+git add .
 git commit -m "feat: integrated payment notifications and synced dashboard with payment map structure"
+git push origin dev
 
+
+# সব নতুন ফাইল এবং পরিবর্তন অ্যাড করুন
+
+git add .
+git commit -m "feat: implement AuthGuard with role-based routing and approval status check"
 git push origin dev
 
 প্রজেক্টের শেষে

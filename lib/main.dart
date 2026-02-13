@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'features/home/language/language_provider.dart';
-import 'features/home/home_screen.dart'; // হোম স্ক্রিন ইমপোর্ট নিশ্চিত করুন
+import 'features/auth/auth_guard.dart'; // ইমপোর্ট করা হলো
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,11 +25,12 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'NUBTK Pilot',
       theme: ThemeData(
-        primarySwatch: Colors.indigo,
+        primaryColor: Colors.indigo,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      // অ্যাপ চালু হলে এখন আগের মতো HomeScreen আসবে
-      home: const HomeScreen(), 
+      // এখন অ্যাপ চালু হলে AuthGuard আগে চেক করবে
+      home: const AuthGuard(), 
     );
   }
 }
