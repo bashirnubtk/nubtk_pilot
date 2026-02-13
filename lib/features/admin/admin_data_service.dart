@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../student/student_model.dart';
 import '../payment/payment_model.dart';
 import '../payment/installment_generator.dart';
+import '../payment/waiver_engine.dart'; // ওয়েভার ইঞ্জিন ইম্পোর্ট নিশ্চিত করুন
 
 class AdminDataService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -19,7 +20,6 @@ class AdminDataService {
                 email: data['email'] ?? '',
                 phone: data['phone'] ?? '',
                 department: data['department'] ?? '',
-                // নিচের লাইনটি আপনার এরর সমাধান করবে
                 photoUrl: data['photoUrl'] ?? '', 
                 status: data['status'] ?? 'pending',
                 digitalId: data['digitalId'] ?? '',
@@ -28,12 +28,17 @@ class AdminDataService {
             }).toList());
   }
 
-  /// 🔹 স্টুডেন্ট অ্যাপ্রুভ করার সময় পেমেন্ট ডাটা সহ আপডেট
-  static Future<void> approveStudent(String id, {double totalFee = 450000, double waiver = 20}) async {
-    // ১. পেমেন্ট ক্যালকুলেশন
-    double finalAmount = totalFee - (totalFee * (waiver / 100));
+  /// 🔹 স্টুডেন্ট অ্যাপ্রুভ করার সময় গ্রেড অনুযায়ী ওয়েভার ও পেমেন্ট জেনারেট
+  static Future<void> approveStudent(String id, {
+    double totalFee = 450000, 
+    required String grade, // এখন সরাসরি গ্রেড ইনপুট নেবে
+  }) async {
     
-    // ২. কিস্তি তৈরি করা
+    // ১. WaiverEngine ব্যবহার করে ওয়েভার এবং ফাইনাল অ্যামাউন্ট বের করা
+    double waiverPercent = WaiverEngine.calculateWaiverPercent(grade);
+    double finalAmount = WaiverEngine.calculateFinalAmount(totalFee: totalFee, grade: grade);
+    
+    // ২. কিস্তি তৈরি করা (InstallmentGenerator ব্যবহার করে)
     List<Installment> installments = InstallmentGenerator.generateSemesterInstallments(
       finalAmount: finalAmount,
     );
@@ -42,17 +47,21 @@ class AdminDataService {
     PaymentModel payment = PaymentModel(
       studentId: id,
       totalCourseFee: totalFee,
-      waiverPercent: waiver,
+      waiverPercent: waiverPercent,
       finalPayableAmount: finalAmount,
-      paymentPlan: 'Semester (3 installments)',
+      paymentPlan: '8 Semesters (24 Installments)',
       totalInstallments: installments.length,
       installments: installments,
     );
 
-    // ৪. ফায়ারস্টোরে আপডেট
+    // ৪. ফায়ারস্টোরে ডিজিটাল আইডি জেনারেশন (অপশনাল কিন্তু প্রফেশনাল)
+    String digitalId = 'NUBTK-${DateTime.now().year}-${id.substring(id.length - 4).toUpperCase()}';
+
+    // ৫. ফায়ারস্টোরে আপডেট
     await _firestore.collection('students').doc(id).update({
       'status': 'approved',
-      'payment': payment.toMap(), 
+      'digitalId': digitalId,
+      'payment': payment.toMap(), // পুরো পেমেন্ট অবজেক্ট ম্যাপ হিসেবে সেভ হবে
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

@@ -31,8 +31,8 @@ class PaymentModel {
 }
 
 class Installment {
-  final String id; // আইডি যোগ করা হয়েছে
-  final int semester; // ড্যাশবোর্ডের টেক্সটের জন্য যোগ করা হয়েছে
+  final String id;
+  final int semester;
   final double amount;
   final DateTime dueDate;
   final bool isPaid;
@@ -45,13 +45,14 @@ class Installment {
     required this.isPaid,
   });
 
-  // এই factory মেথডটি Firebase থেকে ডাটা পড়তে সাহায্য করবে
   factory Installment.fromMap(Map<String, dynamic> map) {
     return Installment(
       id: map['id'] ?? '',
-      semester: map['semester'] ?? map['installmentNumber'] ?? 0,
+      semester: map['semester'] ?? 0,
       amount: (map['amount'] ?? 0).toDouble(),
-      dueDate: map['dueDate'] != null ? DateTime.parse(map['dueDate']) : DateTime.now(),
+      dueDate: map['dueDate'] != null 
+          ? DateTime.parse(map['dueDate']) 
+          : DateTime.now(),
       isPaid: map['isPaid'] ?? false,
     );
   }

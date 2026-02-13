@@ -1,5 +1,4 @@
 class WaiverEngine {
-
   static double calculateWaiverPercent(String grade) {
     switch (grade) {
       case "A+":

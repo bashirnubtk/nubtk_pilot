@@ -15,20 +15,17 @@ class AdminScreen extends StatelessWidget {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      // StreamBuilder ব্যবহার করা হয়েছে যাতে ডাটাবেজ চেঞ্জ হলে অ্যাপ অটো আপডেট হয়
       body: StreamBuilder<List<StudentModel>>(
         stream: AdminDataService.getPendingStudentsStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           final pendingStudents = snapshot.data ?? [];
-
           if (pendingStudents.isEmpty) {
             return const Center(child: Text('No pending applications'));
           }
@@ -62,7 +59,7 @@ class AdminScreen extends StatelessWidget {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.check_circle, color: Colors.green, size: 30),
-                        onPressed: () => _handleAction(context, student, 'approve'),
+                        onPressed: () => _showApproveDialog(context, student),
                       ),
                       IconButton(
                         icon: const Icon(Icons.cancel, color: Colors.red, size: 30),
@@ -79,10 +76,37 @@ class AdminScreen extends StatelessWidget {
     );
   }
 
-  // অ্যাকশন হ্যান্ডেল করার জন্য একটি ছোট হেল্পার ফাংশন
-  void _handleAction(BuildContext context, StudentModel student, String action) async {
+  // অ্যাপ্রুভ করার আগে গ্রেড সিলেক্ট করার ডায়ালগ
+  void _showApproveDialog(BuildContext context, StudentModel student) {
+    String selectedGrade = 'A+'; // ডিফল্ট গ্রেড
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Select Student Grade"),
+        content: DropdownButtonFormField<String>(
+          value: selectedGrade,
+          items: ['A+', 'A', 'A-', 'B', 'C'].map((g) => DropdownMenuItem(value: g, child: Text("Grade $g"))).toList(),
+          onChanged: (val) => selectedGrade = val!,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleAction(context, student, 'approve', grade: selectedGrade);
+            },
+            child: const Text("Approve"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleAction(BuildContext context, StudentModel student, String action, {String? grade}) async {
     if (action == 'approve') {
-      await AdminDataService.approveStudent(student.id);
+      // এখানে grade প্যারামিটারটি পাঠানো হচ্ছে যা এরর দূর করবে
+      await AdminDataService.approveStudent(student.id, grade: grade ?? 'A+');
       if (!context.mounted) return;
       _showSnackBar(context, '${student.fullName} approved ✅', Colors.green);
     } else {

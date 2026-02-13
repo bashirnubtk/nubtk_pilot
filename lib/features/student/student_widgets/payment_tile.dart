@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../payment/payment_model.dart';
+import '../../payment/payment_model.dart'; // এই ইমপোর্টটি নিশ্চিত করুন
 
 class PaymentTile extends StatelessWidget {
   final Installment installment;
@@ -23,7 +23,7 @@ class PaymentTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Installment ${installment.semester}',
+          'Installment ${installment.semester}', // এখানে 'semester' এখন মডেলে আছে
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
