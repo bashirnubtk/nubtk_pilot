@@ -203,6 +203,12 @@ git push origin dev
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
+ git add .
+
+git commit -m "feat: integrated payment notifications and synced dashboard with payment map structure"
+
+git push origin dev
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev

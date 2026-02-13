@@ -8,6 +8,7 @@ import 'student_widgets/student_menu_tile.dart';
 import 'student_widgets/payment_tile.dart'; 
 import '../payment/payment_model.dart';
 import '../payment/payment_service.dart';
+import '../payment/payment_notification_service.dart'; // নোটিফিকেশন সার্ভিস ইমপোর্ট
 import '../../features/auth/login_screen.dart';
 
 class StudentDashboardScreen extends StatefulWidget {
@@ -19,6 +20,15 @@ class StudentDashboardScreen extends StatefulWidget {
 
 class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   final String? uid = FirebaseAuth.instance.currentUser?.uid;
+
+  @override
+  void initState() {
+    super.initState();
+    // ড্যাশবোর্ড লোড হওয়ার সময় আগামী ৭ দিনের ডিউ চেক করবে
+    if (uid != null) {
+      PaymentNotificationService.checkUpcomingDues(uid!);
+    }
+  }
 
   // পেমেন্ট হ্যান্ডলার লজিক
   void _handlePayment(Installment inst) async {
@@ -75,18 +85,22 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final String status = data['status'] ?? 'pending';
 
-          // Firestore থেকে পেমেন্ট প্ল্যান ডাটা নিয়ে আসা
-          List<dynamic> paymentListRaw = data['installments'] ?? [];
-          List<Installment> installments = paymentListRaw
-              .map((item) => Installment.fromMap(item as Map<String, dynamic>))
-              .toList();
+          // চ্যাটজিপিটির ভুল ফিক্সড: আপনার ডাটা এখন 'payment' ম্যাপের ভেতরে থাকে
+          List<Installment> installments = [];
+          if (data.containsKey('payment')) {
+            final paymentMap = data['payment'] as Map<String, dynamic>;
+            final List<dynamic> paymentListRaw = paymentMap['installments'] ?? [];
+            installments = paymentListRaw
+                .map((item) => Installment.fromMap(item as Map<String, dynamic>))
+                .toList();
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // আপনার সেই সুন্দর স্ট্যাটাস ব্যানার
+                // স্ট্যাটাস ব্যানার
                 StudentStatusBanner(status: status),
                 const SizedBox(height: 16),
 
@@ -110,7 +124,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 ),
 
                 const SizedBox(height: 24),
-                // পেমেন্ট সেকশন - যা এখন পেমেন্ট কার্ড আকারে দেখাবে
+                // পেমেন্ট সেকশন
                 const Text("Payment Installments", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
 

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'payment_model.dart';
 import 'installment_generator.dart';
+import 'payment_notification_service.dart'; // নোটিফিকেশন সার্ভিস ইমপোর্ট করা হলো
 
 class PaymentService {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -29,7 +30,6 @@ class PaymentService {
       installments: installments,
     );
 
-    // ডাটাবেসে সেভ করার সময় 'payment' কি-র ভেতর ম্যাপ আকারে রাখা হচ্ছে
     await _db.collection('students').doc(studentId).update({
       'payment': newPlan.toMap(),
       'paymentStatus': 'generated',
@@ -52,7 +52,7 @@ class PaymentService {
     return [];
   }
 
-  // ৩. কিস্তি পেইড মার্ক করা
+  // ৩. কিস্তি পেইড মার্ক করা এবং নোটিফিকেশন পাঠানো
   static Future<void> markInstallmentPaid(String installmentId) async {
     final String? uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -69,15 +69,23 @@ class PaymentService {
       Map<String, dynamic> payment = Map<String, dynamic>.from(data['payment']);
       List<dynamic> installments = List.from(payment['installments'] ?? []);
       
+      int paidSemester = 0; // নোটিফিকেশনের জন্য সেমিস্টার ট্র্যাক করা
+
       for (var i = 0; i < installments.length; i++) {
         if (installments[i]['id'] == installmentId) {
           installments[i]['isPaid'] = true;
+          paidSemester = installments[i]['semester'] ?? 0;
           break;
         }
       }
 
       payment['installments'] = installments;
       transaction.update(docRef, {'payment': payment});
+
+      // ৪. পেমেন্ট সফল হলে নোটিফিকেশন ট্রিগার করা
+      if (paidSemester > 0) {
+        await PaymentNotificationService.notifyPaymentSuccess(uid, paidSemester);
+      }
     });
   }
 }
