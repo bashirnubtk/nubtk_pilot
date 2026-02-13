@@ -155,8 +155,18 @@ git add .
 git commit -m "cleanup: remove unused platform folders (windows, linux, macos)"
 git push origin dev
 
+git add .
+git commit -m "feat: implement semester payment plan, installment generator and fix photoUrl errors"
+git push origin dev
+
+# এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
+ git push origin dev
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev
 git commit -m "release: final version with all features implemented"
 git push origin main
+
+# এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
+ git push origin dev

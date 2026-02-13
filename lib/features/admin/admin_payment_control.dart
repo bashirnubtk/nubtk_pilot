@@ -1,0 +1,37 @@
+import 'package:flutter/material.dart';
+import '../payment/payment_service.dart';
+
+class AdminPaymentControl extends StatelessWidget {
+  final String studentId;
+  const AdminPaymentControl({super.key, required this.studentId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.calculate),
+        onPressed: () async {
+          // পেমেন্ট প্ল্যান তৈরি করা
+          await PaymentService.createPaymentPlan(
+            studentId: studentId,
+            grade: "A+",
+            totalCourseFee: 800000,
+          );
+          
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Payment Plan Generated Successfully!")),
+            );
+          }
+        },
+        label: const Text("Generate Payment Plan"),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          backgroundColor: Colors.indigo,
+          foregroundColor: Colors.white,
+        ),
+      ),
+    );
+  }
+}
