@@ -180,6 +180,26 @@ git commit -m "fix: restore home screen navigation and fix admin login black scr
 - Cleaned up unused imports and improved code stability."
 git push origin dev
 
+
+
+git add .
+git commit -m "fix: resolve undefined identifiers in payment logic and dashboard" -m "
+- Fixed missing fromMap, id, and semester in Installment model.
+- Implemented markInstallmentPaid in PaymentService.
+- Resolved BuildContext async gap warnings in Auth screens.
+- Fixed missing required photoUrl parameter in AdminDataService."
+git push origin dev
+
+
+git add .
+git commit -m "fix: resolve all identified errors and sync payment logic" -m "
+- Implemented createPaymentPlan and markInstallmentPaid in PaymentService.
+- Fixed InstallmentGenerator to align with updated PaymentModel.
+- Resolved missing photoUrl parameter in AdminDataService.
+- Fixed deprecated 'value' property in RegisterScreen.
+- Synchronized StudentDashboard with real-time Firestore updates."
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
