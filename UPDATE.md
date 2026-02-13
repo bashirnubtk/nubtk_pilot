@@ -170,6 +170,16 @@ git commit -m "feat: implement auth system with dual-mode login and payment logi
 - Optimized app performance with flutter clean and code restructuring."
 git push origin dev
 
+
+git add .
+git commit -m "fix: restore home screen navigation and fix admin login black screen" -m "
+- Updated main.dart to set HomeScreen as the initial route.
+- Fixed black screen issue in LoginScreen by adding admin login logic.
+- Resolved syntax errors in AdminPaymentControl and updated imports.
+- Re-connected Login and Register flow from the Guest Homepage.
+- Cleaned up unused imports and improved code stability."
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
