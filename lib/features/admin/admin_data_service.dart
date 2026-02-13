@@ -2,14 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../student/student_model.dart';
 import '../payment/payment_model.dart';
 import '../payment/installment_generator.dart';
-import '../payment/waiver_engine.dart'; // ওয়েভার ইঞ্জিন ইম্পোর্ট নিশ্চিত করুন
+import '../payment/waiver_engine.dart';
 
 class AdminDataService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // ফায়ারবেস থেকে পেন্ডিং স্টুডেন্টদের স্ট্রীম আনা
   static Stream<List<StudentModel>> getPendingStudentsStream() {
     return _firestore
-        .collection('students')
+        .collection('students') // রেজিস্ট্রেশন ফাইলে কালেকশন নাম 'students' রাখা হয়েছে
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) {
@@ -28,17 +29,15 @@ class AdminDataService {
             }).toList());
   }
 
-  /// 🔹 স্টুডেন্ট অ্যাপ্রুভ করার সময় গ্রেড অনুযায়ী ওয়েভার ও পেমেন্ট জেনারেট
   static Future<void> approveStudent(String id, {
     double totalFee = 450000, 
-    required String grade, // এখন সরাসরি গ্রেড ইনপুট নেবে
+    required String grade,
   }) async {
-    
-    // ১. WaiverEngine ব্যবহার করে ওয়েভার এবং ফাইনাল অ্যামাউন্ট বের করা
+    // ১. ওয়েভার ক্যালকুলেশন
     double waiverPercent = WaiverEngine.calculateWaiverPercent(grade);
     double finalAmount = WaiverEngine.calculateFinalAmount(totalFee: totalFee, grade: grade);
     
-    // ২. কিস্তি তৈরি করা (InstallmentGenerator ব্যবহার করে)
+    // ২. কিস্তি জেনারেট করা
     List<Installment> installments = InstallmentGenerator.generateSemesterInstallments(
       finalAmount: finalAmount,
     );
@@ -54,14 +53,10 @@ class AdminDataService {
       installments: installments,
     );
 
-    // ৪. ফায়ারস্টোরে ডিজিটাল আইডি জেনারেশন (অপশনাল কিন্তু প্রফেশনাল)
-    String digitalId = 'NUBTK-${DateTime.now().year}-${id.substring(id.length - 4).toUpperCase()}';
-
-    // ৫. ফায়ারস্টোরে আপডেট
+    // ৪. স্ট্যাটাস আপডেট করা
     await _firestore.collection('students').doc(id).update({
       'status': 'approved',
-      'digitalId': digitalId,
-      'payment': payment.toMap(), // পুরো পেমেন্ট অবজেক্ট ম্যাপ হিসেবে সেভ হবে
+      'payment': payment.toMap(), 
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

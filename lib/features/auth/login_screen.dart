@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import '../student/student_dashboard_screen.dart';
-import '../admin/admin_screen.dart'; 
+// এখানে AdminScreen এর বদলে AdminDashboard ইম্পোর্ট করা হয়েছে
+import '../admin/admin_dashboard.dart'; 
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,7 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final String emailInput = _email.text.trim();
     final String passInput = _password.text.trim();
 
-    // ১. খালি ইনপুট চেক
     if (emailInput.isEmpty || passInput.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter both email and password")),
@@ -34,18 +34,18 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      // ২. অ্যাডমিন হার্ডকোডেড লগইন (ফায়ারবেসকে বাইপাস করবে)
+      // ১. অ্যাডমিন হার্ডকোডেড লগইন (নতুন AdminDashboard এ পাঠাবে)
       if (_isAdminMode && emailInput == "admin" && passInput == "admin@123") {
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const AdminScreen()),
+          MaterialPageRoute(builder: (_) => const AdminDashboard()), // এখানে পরিবর্তন
           (route) => false,
         );
-        return; // এখানেই কাজ শেষ, নিচের ফায়ারবেস লজিক আর রান হবে না
+        return; 
       }
 
-      // ৩. ফায়ারবেস অথেন্টিকেশন (স্টুডেন্ট বা অন্য ইউজারদের জন্য)
+      // ২. ফায়ারবেস অথেন্টিকেশন
       final user = await _auth.login(
         email: emailInput,
         password: passInput,
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (role == 'admin' && _isAdminMode) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const AdminScreen()),
+            MaterialPageRoute(builder: (_) => const AdminDashboard()), // এখানেও পরিবর্তন
             (route) => false,
           );
         } else {
@@ -72,7 +72,6 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      // ফায়ারবেস থেকে আসা এরর মেসেজ হ্যান্ডলিং
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
       );
@@ -107,11 +106,10 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // মোড সিলেকশন বাটন (Student/Admin)
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2), // Deprecated withOpacity ফিক্স করা হয়েছে
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Row(
@@ -134,7 +132,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 25),
-                  // লগইন কার্ড
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -142,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         )
@@ -156,7 +153,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             labelText: _isAdminMode ? "Username" : "Email Address",
                             prefixIcon: Icon(Icons.person_outline, color: primaryColor),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                         const SizedBox(height: 15),
@@ -171,7 +167,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                         const SizedBox(height: 25),
@@ -185,7 +180,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primaryColor,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                    elevation: 2,
                                   ),
                                   child: const Text("LOGIN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                 ),
@@ -193,7 +187,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20), 
                 ],
               ),
             ),

@@ -214,6 +214,15 @@ git add .
 git commit -m "feat: implement AuthGuard with role-based routing and approval status check"
 git push origin dev
 
+
+git add .
+git commit -m "feat: complete student registration flow and admin approval dashboard" -m "Summary of changes:
+- Redesigned RegisterScreen with premium UI and better error handling.
+- Implemented real-time AdminScreen with Firestore StreamBuilder.
+- Fixed Admin login logic and payment plan generation."
+git push origin dev
+
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev
