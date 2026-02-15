@@ -223,6 +223,16 @@ git commit -m "feat: complete student registration flow and admin approval dashb
 git push origin dev
 
 
+git add .
+git commit -m "feat: connect LoginScreen to new AdminDashboard and fix deprecated UI warnings"
+git push origin dev
+
+
+git add .
+git commit -m "feat: setup Node.js, fix admin dashboard design, and update auth flow"
+git push origin dev
+
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev

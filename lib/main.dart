@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'features/home/language/language_provider.dart';
+import 'features/home/languages/language_provider.dart';
 import 'features/auth/auth_guard.dart'; // ইমপোর্ট করা হলো
 
 void main() async {

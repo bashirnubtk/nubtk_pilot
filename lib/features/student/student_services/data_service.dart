@@ -1,4 +1,4 @@
-import 'student_model.dart';
+import '../models/student_model.dart';
 
 class StudentDataService {
   static final List<StudentModel> _students = [];

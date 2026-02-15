@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../student/student_model.dart';
+import '../student/models/student_model.dart';
 import '../payment/payment_model.dart';
 import '../payment/installment_generator.dart';
 import '../payment/waiver_engine.dart';

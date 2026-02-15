@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_strings.dart';
-import '../home/language/language_provider.dart';
+import 'languages/language_provider.dart';
 import '../auth/login_screen.dart';
 import '../auth/register_screen.dart'; // নতুন ইম্পোর্ট যোগ করা হয়েছে
 import '../ai_bot/ai_bot_screen.dart';

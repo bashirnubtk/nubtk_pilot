@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
-import '../student/student_dashboard_screen.dart';
-// এখানে AdminScreen এর বদলে AdminDashboard ইম্পোর্ট করা হয়েছে
+import '../student/screens/student_dashboard_screen.dart';
 import '../admin/admin_dashboard.dart'; 
 
 class LoginScreen extends StatefulWidget {
@@ -34,18 +33,16 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      // ১. অ্যাডমিন হার্ডকোডেড লগইন (নতুন AdminDashboard এ পাঠাবে)
       if (_isAdminMode && emailInput == "admin" && passInput == "admin@123") {
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const AdminDashboard()), // এখানে পরিবর্তন
+          MaterialPageRoute(builder: (_) => const AdminDashboard()),
           (route) => false,
         );
         return; 
       }
 
-      // ২. ফায়ারবেস অথেন্টিকেশন
       final user = await _auth.login(
         email: emailInput,
         password: passInput,
@@ -64,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (role == 'admin' && _isAdminMode) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const AdminDashboard()), // এখানেও পরিবর্তন
+            MaterialPageRoute(builder: (_) => const AdminDashboard()),
             (route) => false,
           );
         } else {
@@ -87,6 +84,15 @@ class _LoginScreenState extends State<LoginScreen> {
     
     return Scaffold(
       extendBodyBehindAppBar: true,
+      // ব্যাক বাটন যুক্ত করা হয়েছে এখানে
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -109,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2), // Deprecated withOpacity ফিক্স করা হয়েছে
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Row(

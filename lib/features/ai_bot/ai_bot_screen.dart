@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:nubtk_pilot/features/home/language/language_provider.dart';
+import 'package:nubtk_pilot/features/home/languages/language_provider.dart';
 import '../../core/constants/app_strings.dart';
 
 class AIBotScreen extends StatefulWidget {

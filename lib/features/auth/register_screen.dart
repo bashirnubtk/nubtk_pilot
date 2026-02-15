@@ -5,9 +5,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/constants/app_strings.dart';
 import '../home/home_screen.dart';
-import '../student/student_model.dart';
-import '../student/data_service.dart';
-import '../home/language/language_provider.dart';
+import '../student/models/student_model.dart';
+import '../student/student_services/data_service.dart';
+import '../home/languages/language_provider.dart';
+// নতুন ইম্পোর্টটি যুক্ত করা হয়েছে
+import 'waiting_approval_screen.dart'; 
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -20,7 +22,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  // Controllers
   final _name = TextEditingController();
   final _father = TextEditingController();
   final _mother = TextEditingController();
@@ -59,56 +60,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // আপডেট করা সাবমিট মেথড
   void _submit(String lang) async {
     if (!_formKey.currentState!.validate()) return;
     
+    // ফাইল চেক
+    if (_photoPath.isEmpty || _sscPath.isEmpty || _hscPath.isEmpty) {
+      _showError("Please upload your photo and all marksheets.");
+      return;
+    }
+
     setState(() => _isLoading = true); 
 
     try {
-      // ১. FirebaseAuth-এ অ্যাকাউন্ট তৈরি (পাসওয়ার্ড হিসেবে ফোন নম্বর)
       final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _email.text.trim(),
         password: _phone.text.trim(), 
       );
 
       final String uid = userCredential.user!.uid; 
-      String digitalId = "NUBTK-${DateTime.now().millisecondsSinceEpoch}";
-
-      final student = StudentModel(
-        id: uid, 
-        fullName: _name.text,
-        email: _email.text,
-        phone: _phone.text,
-        department: _selectedDept ?? 'General',
-        sscGpa: double.tryParse(_ssc.text),
-        hscGpa: double.tryParse(_hsc.text),
-        photoUrl: _photoPath,
-        status: 'pending',
-        digitalId: digitalId, 
-        createdAt: DateTime.now(),
-      );
-
-      // ২. ফায়ারস্টোরে ডাটা সেভ (অবশ্যই await করতে হবে)
-      await FirebaseFirestore.instance.collection('students').doc(uid).set({
+      
+      // ডাটাবেজে ডাটা সেভ (কালেকশন নাম 'users' হিসেবে আপডেট করা হয়েছে আপনার চাহিদা অনুযায়ী)
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'id': uid,
-        'fullName': student.fullName,
-        'email': student.email,
-        'phone': student.phone,
-        'role': 'student', // এটি পরে অ্যাডমিন প্যানেলে ফিল্টার করতে সাহায্য করবে
-        'department': student.department,
-        'sscGpa': student.sscGpa,
-        'hscGpa': student.hscGpa,
-        'photoUrl': student.photoUrl,
+        'fullName': _name.text,
+        'email': _email.text,
+        'phone': _phone.text,
+        'role': 'student',
+        'department': _selectedDept ?? 'General',
+        'sscGpa': double.tryParse(_ssc.text),
+        'hscGpa': double.tryParse(_hsc.text),
+        'photoUrl': _photoPath,
         'sscMarksheetPath': _sscPath, 
         'hscMarksheetPath': _hscPath, 
         'status': 'pending',
-        'digitalId': digitalId,
-        'createdAt': student.createdAt,
+        'createdAt': DateTime.now(),
       });
 
       if (!mounted) return;
-      setState(() => _isLoading = false); // কাজ শেষ হলে লোডিং বন্ধ
-      _showSuccessDialog(lang, digitalId);
+      setState(() => _isLoading = false);
+
+      // সরাসরি ওয়েটিং স্ক্রিনে চলে যাবে
+      Navigator.pushAndRemoveUntil(
+        context, 
+        MaterialPageRoute(builder: (_) => const WaitingApprovalScreen()),
+        (route) => false
+      );
 
     } on FirebaseAuthException catch (e) {
       if (mounted) setState(() => _isLoading = false);
@@ -131,113 +128,148 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final lang = Provider.of<LanguageProvider>(context).languageCode;
     
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // কাস্টম অ্যাপ বার ডিজাইন
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
+      body: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            "Registration",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 48),
+                      ],
                     ),
-                    const Expanded(
-                      child: Text(
-                        "Registration",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8F9FE),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(40),
+                          topRight: Radius.circular(40),
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              _photoPicker(lang),
+                              const SizedBox(height: 30),
+                              _buildCardSection("Personal Information", [
+                                _field(_name, "Full Name", Icons.person_outline),
+                                _field(_father, "Father's Name", Icons.family_restroom_outlined),
+                                _field(_mother, "Mother's Name", Icons.family_restroom_outlined),
+                              ]),
+                              const SizedBox(height: 20),
+                              _buildCardSection("Contact & Academic", [
+                                _field(_email, "Email Address", Icons.email_outlined, type: TextInputType.emailAddress),
+                                _field(_phone, "Phone Number", Icons.phone_android_outlined, type: TextInputType.phone),
+                                _departmentDropdown(),
+                                Row(
+                                  children: [
+                                    Expanded(child: _field(_ssc, 'SSC GPA', Icons.grade_outlined, type: TextInputType.number)),
+                                    const SizedBox(width: 15),
+                                    Expanded(child: _field(_hsc, 'HSC GPA', Icons.grade_outlined, type: TextInputType.number)),
+                                  ],
+                                ),
+                              ]),
+                              const SizedBox(height: 20),
+                              _buildCardSection("Documents", [
+                                _uploadBox("SSC Marksheet", _sscPath, () => _pickFile('ssc')),
+                                const SizedBox(height: 12),
+                                _uploadBox("HSC Marksheet", _hscPath, () => _pickFile('hsc')),
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 10, left: 5),
+                                  child: Text(
+                                    "* Please upload files in PDF or Image format only.",
+                                    style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
+                                  ),
+                                ),
+                              ]),
+                              const SizedBox(height: 40),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 55,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : () => _submit(lang),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF4F46E5),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                    elevation: 4,
+                                  ),
+                                  child: const Text("SUBMIT APPLICATION", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                                ),
+                              ),
+                              const SizedBox(height: 50),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 48), // ব্যালেন্সের জন্য
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // ওয়েটিং পেজ ওভারলে
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.7),
+              width: double.infinity,
+              height: double.infinity,
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: 20),
+                    Text(
+                      "Processing Your Application...",
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+                      child: Text(
+                        "Please wait a moment while we set up your profile.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                      ),
+                    )
                   ],
                 ),
               ),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF8F9FE),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          _photoPicker(lang),
-                          const SizedBox(height: 30),
-                          _buildCardSection("Personal Information", [
-                            _field(_name, "Full Name", Icons.person_outline),
-                            _field(_father, "Father's Name", Icons.family_restroom_outlined),
-                            _field(_mother, "Mother's Name", Icons.family_restroom_outlined),
-                          ]),
-                          const SizedBox(height: 20),
-                          _buildCardSection("Contact & Academic", [
-                            _field(_email, "Email Address", Icons.email_outlined, type: TextInputType.emailAddress),
-                            _field(_phone, "Phone Number", Icons.phone_android_outlined, type: TextInputType.phone),
-                            _departmentDropdown(),
-                            Row(
-                              children: [
-                                Expanded(child: _field(_ssc, 'SSC GPA', Icons.grade_outlined, type: TextInputType.number)),
-                                const SizedBox(width: 15),
-                                Expanded(child: _field(_hsc, 'HSC GPA', Icons.grade_outlined, type: TextInputType.number)),
-                              ],
-                            ),
-                          ]),
-                          const SizedBox(height: 20),
-                          _buildCardSection("Documents", [
-                            _uploadBox("SSC Marksheet", _sscPath, () => _pickFile('ssc')),
-                            const SizedBox(height: 12),
-                            _uploadBox("HSC Marksheet", _hscPath, () => _pickFile('hsc')),
-                          ]),
-                          const SizedBox(height: 40),
-                          // সাবমিট বাটন
-                          SizedBox(
-                            width: double.infinity,
-                            height: 55,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : () => _submit(lang),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF4F46E5),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                elevation: 4,
-                              ),
-                              child: _isLoading 
-                                ? const CircularProgressIndicator(color: Colors.white)
-                                : const Text("SUBMIT APPLICATION", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            ),
-                          ),
-                          const SizedBox(height: 50),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }
 
-  // ডিজাইন উন্নত করার জন্য কাস্টম কার্ড সেকশন
+  // নিচের ডিজাইন উইজেটগুলো অপরিবর্তিত রাখা হয়েছে
   Widget _buildCardSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,7 +291,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ইমপুট ফিল্ড ডিজাইন (Login এর সাথে সামঞ্জস্য রেখে)
   Widget _field(TextEditingController controller, String label, IconData icon, {TextInputType type = TextInputType.text}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -313,7 +344,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             Icon(path.isEmpty ? Icons.cloud_upload_outlined : Icons.check_circle, color: path.isEmpty ? Colors.grey : Colors.green),
             const SizedBox(width: 10),
-            Text(label, style: TextStyle(color: path.isEmpty ? Colors.grey.shade700 : Colors.green.shade700)),
+            Expanded(child: Text(label, style: TextStyle(color: path.isEmpty ? Colors.grey.shade700 : Colors.green.shade700), overflow: TextOverflow.ellipsis)),
           ],
         ),
       ),
@@ -326,6 +357,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         CircleAvatar(
           radius: 50,
           backgroundColor: Colors.indigo.shade50,
+          // বাস্তব অ্যাপে এখানে FileImage ব্যবহার করতে হবে যদি লোকাল পাথ থাকে
           backgroundImage: _photoPath.isNotEmpty ? AssetImage(_photoPath) : null,
           child: _photoPath.isEmpty ? Icon(Icons.add_a_photo, size: 40, color: Colors.indigo.shade200) : null,
         ),
@@ -334,37 +366,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: const Text("Upload Student Photo", style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
-    );
-  }
-
-  void _showSuccessDialog(String lang, String digitalId) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 70),
-            const SizedBox(height: 20),
-            const Text("Application Submitted!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 12),
-            Text("Your Digital ID: $digitalId\nPlease wait for admin approval.", textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-                },
-                child: const Text("Close"),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
