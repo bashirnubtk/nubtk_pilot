@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'admin_data_service.dart';
+// হোম স্ক্রিন ইমপোর্ট করা হলো যাতে ব্যাক বাটন কাজ করে
+import '../home/home_screen.dart'; 
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
+
+  static final AdminDataService _service = AdminDataService();
 
   @override
   Widget build(BuildContext context) {
@@ -10,15 +15,27 @@ class AdminDashboard extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("Admin Control Panel", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
           backgroundColor: Colors.indigo,
-          elevation: 0,
+          elevation: 2,
+          centerTitle: true,
+          // ব্যাক বাটন ফিক্স: এখন এটি হোম স্ক্রিনে নিয়ে যাবে
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+                (route) => false,
+              );
+            },
+          ),
+          title: const Text(
+            "NUBTK Admin Panel",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          ),
           bottom: const TabBar(
             indicatorColor: Colors.white,
-            indicatorWeight: 4,
-            labelColor: Colors.white, // সিলেক্টেড টেক্সট কালার
-            unselectedLabelColor: Colors.white70, // আন-সিলেক্টেড টেক্সট কালার
-            labelStyle: TextStyle(fontWeight: FontWeight.bold),
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
             tabs: [
               Tab(icon: Icon(Icons.person_add), text: "Admission"),
               Tab(icon: Icon(Icons.payments), text: "Payments"),
@@ -26,10 +43,10 @@ class AdminDashboard extends StatelessWidget {
           ),
         ),
         body: Container(
-          color: const Color(0xFFF8F9FE), // হালকা ব্যাকগ্রাউন্ড কালার
+          color: const Color(0xFFF4F7FA),
           child: TabBarView(
             children: [
-              _buildAdmissionTab(),
+              _buildAdmissionTab(context),
               _buildPaymentTab(),
             ],
           ),
@@ -38,40 +55,36 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildAdmissionTab() {
+  Widget _buildAdmissionTab(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('students') // রেজিস্ট্রেশন পেজ অনুযায়ী কালেকশন নাম 'students'
-          .where('status', isEqualTo: 'pending')
-          .snapshots(),
+      stream: _service.getPendingStudents(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-        
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _noDataWidget("No Pending Admissions");
-        }
+        if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const Center(child: Text("No Pending Applications"));
 
         return ListView.builder(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           itemCount: snapshot.data!.docs.length,
           itemBuilder: (context, index) {
             var doc = snapshot.data!.docs[index];
             var data = doc.data() as Map<String, dynamic>;
 
             return Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              elevation: 4,
               margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
                 title: Text(data['fullName'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text("Dept: ${data['department']}\nGPA: ${data['sscGpa']} / ${data['hscGpa']}"),
+                subtitle: Text("Dept: ${data['department']}"),
                 trailing: ElevatedButton(
-                  onPressed: () => _updateStatus(doc.id, 'approved'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                  onPressed: () async {
+                    await _service.approveStudent(doc.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Approved ✅")));
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                   child: const Text("Approve", style: TextStyle(color: Colors.white)),
                 ),
               ),
@@ -84,53 +97,28 @@ class AdminDashboard extends StatelessWidget {
 
   Widget _buildPaymentTab() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('students')
-          .where('status', isEqualTo: 'approved')
-          .snapshots(),
+      stream: _service.getApprovedStudents(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return _noDataWidget("No Students for Payment");
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const Center(child: Text("No Approved Students"));
 
         return ListView.builder(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           itemCount: snapshot.data!.docs.length,
           itemBuilder: (context, index) {
             var doc = snapshot.data!.docs[index];
             var data = doc.data() as Map<String, dynamic>;
-
             return Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               child: ListTile(
-                leading: CircleAvatar(backgroundColor: Colors.blue.shade50, child: const Icon(Icons.wallet, color: Colors.blue)),
+                leading: const CircleAvatar(child: Icon(Icons.person)),
                 title: Text(data['fullName'] ?? 'Unknown'),
-                subtitle: Text("ID: ${data['digitalId'] ?? 'Pending'}"),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                subtitle: Text("ID: ${data['digitalId']}"),
+                trailing: const Icon(Icons.check_circle, color: Colors.green),
               ),
             );
           },
         );
       },
     );
-  }
-
-  Widget _noDataWidget(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.inbox_outlined, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(message, style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
-        ],
-      ),
-    );
-  }
-
-  void _updateStatus(String docId, String status) async {
-    await FirebaseFirestore.instance.collection('students').doc(docId).update({
-      'status': status,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
   }
 }

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_strings.dart';
 import 'languages/language_provider.dart';
 import '../auth/login_screen.dart';
-import '../auth/register_screen.dart'; // নতুন ইম্পোর্ট যোগ করা হয়েছে
+import '../auth/register_screen.dart';
 import '../ai_bot/ai_bot_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -57,11 +57,9 @@ class HomeScreen extends StatelessWidget {
               _quickLinksSection(languageCode),
               const SizedBox(height: 32),
 
-              // AI Assistant Button
               _aiAssistantButton(languageCode, context),
               const SizedBox(height: 20),
 
-              // Auth Buttons (এখন নেভিগেশন সহ)
               _authButtons(languageCode, context),
               const SizedBox(height: 30),
             ],
@@ -84,7 +82,7 @@ class HomeScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.indigo.withAlpha(64), // ফিক্সড withOpacity warning
+            color: Colors.indigo.withAlpha(64),
             blurRadius: 20,
             offset: const Offset(0, 10),
           )
@@ -117,7 +115,7 @@ class HomeScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.purple.withAlpha(51), // ফিক্সড withOpacity warning
+              color: Colors.purple.withAlpha(51),
               blurRadius: 10, 
               offset: const Offset(0, 4),
             )
@@ -153,13 +151,7 @@ class HomeScreen extends StatelessWidget {
           child: _modernButton(
             title: AppStrings.register[languageCode]!,
             isFilled: true,
-            onPressed: () {
-              // নেভিগেশন যোগ করা হয়েছে
-              Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (_) => const RegisterScreen())
-              );
-            },
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
           ),
         ),
       ],
@@ -176,7 +168,6 @@ class HomeScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: isFilled ? Colors.transparent : Colors.indigo.shade200),
           ),
-          elevation: isFilled ? 2 : 0,
         ),
         onPressed: onPressed,
         child: Text(
@@ -252,7 +243,6 @@ class _NoticeCard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Color color;
-
   const _NoticeCard({required this.title, required this.subtitle, required this.icon, required this.color});
 
   @override
@@ -264,10 +254,9 @@ class _NoticeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(5), // updated
+            color: Colors.black.withAlpha(13),
             blurRadius: 10, 
             offset: const Offset(0, 4),
           )
@@ -276,7 +265,7 @@ class _NoticeCard extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: color.withAlpha(26), // updated
+            backgroundColor: color.withAlpha(26),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
@@ -286,7 +275,7 @@ class _NoticeCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ),
@@ -300,7 +289,6 @@ class _ModernListTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
-
   const _ModernListTile({required this.icon, required this.title, required this.onTap});
 
   @override

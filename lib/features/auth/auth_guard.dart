@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// আপনার প্রোজেক্টের সঠিক পাথ অনুযায়ী ইম্পোর্ট
-import '../admin/admin_dashboard.dart'; // এখানে নিশ্চিত করুন আপনার অ্যাডমিন ফাইলের নাম এটাই
+// আপনার প্রোজেক্টের সঠিক পাথ অনুযায়ী ইম্পোর্ট
+import '../admin/admin_screen.dart'; // এখানে AdminDashboard ক্লাসটি আছে
 import '../student/screens/student_dashboard_screen.dart';
 import '../home/home_screen.dart';
 import 'waiting_approval_screen.dart';
@@ -21,14 +21,14 @@ class AuthGuard extends StatelessWidget {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
-        // ইউজার লগইন না থাকলে হোমে নিয়ে যাবে
+        // ইউজার লগইন না থাকলে হোমে নিয়ে যাবে
         if (!snapshot.hasData || snapshot.data == null) {
           return const HomeScreen();
         }
 
         final user = snapshot.data!;
 
-        // ইউজার আইডি দিয়ে Firestore থেকে চেক করা
+        // ইউজার আইডি দিয়ে Firestore থেকে চেক করা
         return FutureBuilder<DocumentSnapshot>(
           // প্রথমে 'students' কালেকশন চেক করবে
           future: FirebaseFirestore.instance.collection('students').doc(user.uid).get(),
@@ -37,7 +37,7 @@ class AuthGuard extends StatelessWidget {
               return const Scaffold(body: Center(child: CircularProgressIndicator()));
             }
 
-            // যদি স্টুডেন্ট হিসেবে পাওয়া যায়
+            // যদি স্টুডেন্ট হিসেবে পাওয়া যায়
             if (studentSnapshot.hasData && studentSnapshot.data!.exists) {
               final data = studentSnapshot.data!.data() as Map<String, dynamic>;
               final String status = data['status'] ?? 'pending';
@@ -57,12 +57,12 @@ class AuthGuard extends StatelessWidget {
                   return const Scaffold(body: Center(child: CircularProgressIndicator()));
                 }
 
-                // যদি অ্যাডমিন হিসেবে পাওয়া যায়
+                // যদি অ্যাডমিন হিসেবে পাওয়া যায়
                 if (adminSnapshot.hasData && adminSnapshot.data!.exists) {
-                  return const AdminDashboard(); // ছবির সেই সুন্দর অ্যাডমিন প্যানেল
+                  return const AdminDashboard(); 
                 }
 
-                // কোনো লিস্টেই না থাকলে (যেমন: নতুন ইউজার কিন্তু ডাটাবেসে এন্ট্রি নেই)
+                // কোনো লিস্টেই না থাকলে (নতুন ইউজার)
                 return const HomeScreen();
               },
             );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import '../student/screens/student_dashboard_screen.dart';
-import '../admin/admin_dashboard.dart'; 
+import '../admin/admin_screen.dart'; // পাথ সঠিক করা হয়েছে
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,6 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
+      // স্পেশাল অ্যাডমিন লগইন (হার্ডকোডেড টেস্টের জন্য)
       if (_isAdminMode && emailInput == "admin" && passInput == "admin@123") {
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
@@ -84,7 +85,6 @@ class _LoginScreenState extends State<LoginScreen> {
     
     return Scaffold(
       extendBodyBehindAppBar: true,
-      // ব্যাক বাটন যুক্ত করা হয়েছে এখানে
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
