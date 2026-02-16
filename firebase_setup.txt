@@ -1,0 +1,40 @@
+======================================================
+NUBTK PILOT - FIREBASE SETUP GUIDE FOR NEW LAPTOP
+======================================================
+
+নতুন ল্যাপটপে এই প্রজেক্টটি পুল (Pull) করার পর ফায়ারবেস সেটআপ করার জন্য নিচের ধাপগুলো অনুসরণ করুন:
+
+১. প্রয়োজনীয় সফটওয়্যার ইনস্টল (যদি না থাকে):
+   - Node.js ইনস্টল করুন (https://nodejs.org/)
+   - টার্মিনালে লিখুন: npm install -g firebase-tools
+
+২. ফায়ারবেস লগইন:
+   - কমান্ড: firebase login
+   - ব্রাউজার ওপেন হলে আপনার Gmail সিলেক্ট করে Allow করুন।
+
+৩. ফায়ারবেস প্রজেক্ট কানেক্ট করা:
+   - কমান্ড: firebase use --add
+   - আপনার প্রজেক্টটি (nubtk-pilot-d3008) সিলেক্ট করুন।
+   - একটি Alias নাম দিন (যেমন: default)।
+
+৪. ক্লাউড ফাংশন ফোল্ডার কনফিগারেশন:
+   যেহেতু 'functions' ফোল্ডারটি অলরেডি গিটহাবে আছে, তাই আপনাকে নতুন করে 'init' করতে হবে না। শুধু নিচের কাজগুলো করুন:
+   - কমান্ড: cd functions
+   - কমান্ড: npm install
+   - কমান্ড: cd ..
+
+৫. যদি কখনও 'firebase init functions' পুনরায় দিতে হয়, তবে সিলেকশনগুলো হবে:
+   - ? Are you ready to proceed? -> Yes
+   - ? Please select an option: -> Use an existing project
+   - ? Select a default Firebase project: -> nubtk-pilot-d3008
+   - ? What language would you like to use? -> JavaScript
+   - ? Do you want to use ESLint? -> No (অথবা Yes দিলে রুলস মানতে হবে)
+   - ? File index.js already exists. Overwrite? -> NO (এটি খুব গুরুত্বপূর্ণ, সবসময় 'N' দিবেন নাহলে আপনার কোড ডিলিট হয়ে যাবে)
+   - ? Do you want to install dependencies with npm now? -> Yes
+
+৬. ক্লাউড ফাংশন ডিপ্লয় (Deploy):
+   - কমান্ড: firebase deploy --only functions
+
+সতর্কতা: 
+Cloud Functions চালানোর জন্য আপনার Firebase কনসোলে গিয়ে প্রজেক্টটি অবশ্যই 'Blaze Plan' (Pay-as-you-go) এ আপগ্রেড করা থাকতে হবে।
+======================================================
