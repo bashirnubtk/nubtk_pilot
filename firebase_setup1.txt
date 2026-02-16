@@ -27,3 +27,51 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ৬. ফ্ল্যাটার প্যাকেজ আপডেট করা:
    কমান্ড: flutter pub get
 ======================================================
+
+======================================================
+NEW LAPTOP SETUP - FIREBASE & AI CONFIGURATION
+======================================================
+
+১. পাওয়ারশেল এরর সমাধান (টার্মিনালে লাল কালি আসলে আগে এটি করুন):
+   কমান্ড: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   (এরপর 'Y' লিখে এন্টার দিন)
+
+২. ফায়ারবেস লগইন:
+   কমান্ড: firebase login
+
+৩. AI লাইব্রেরি এবং ডিপেন্ডেন্সি ইনস্টল (সবচেয়ে গুরুত্বপূর্ণ):
+   প্রজেক্টের রুট ফোল্ডার থেকে এই কমান্ডগুলো দিন:
+   কমান্ড: cd functions
+   কমান্ড: npm install
+   কমান্ড: npm install @google/generative-ai
+   কমান্ড: cd ..
+
+৪. Gemini API Key সেটআপ:
+   - Google AI Studio থেকে কী (Key) সংগ্রহ করুন।
+   - কমান্ড: firebase functions:config:set gemini.key="আপনার_এপিআই_কী"
+
+৫. লোকাল কনফিগ তৈরি (ডেভেলপমেন্টের জন্য):
+   কমান্ড: cd functions
+   কমান্ড: firebase functions:config:get > .runtimeconfig.json
+   কমান্ড: cd ..
+
+৬. ক্লাউড ফাংশন ডিপ্লয়:
+   কমান্ড: firebase deploy --only functions
+
+৭. ফ্লাটার প্রজেক্ট রান:
+   কমান্ড: flutter pub get
+   কমান্ড: flutter run
+======================================================
+
+======================================================
+NEW LAPTOP SETUP - NO CLOUD FUNCTIONS VERSION
+======================================================
+১. প্রজেক্ট পুল করার পর টার্মিনালে দিন:
+   কমান্ড: flutter pub get
+
+২. সরাসরি অ্যাপ রান করুন:
+   কমান্ড: flutter run
+
+নোট: আমরা ক্লাউড ফাংশন ব্যবহার করছি না, তাই এপিআই কি সরাসরি 
+'finance_ai_handler.dart' ফাইলে আছে। এটি আলাদা করে সেট করার প্রয়োজন নেই।
+======================================================

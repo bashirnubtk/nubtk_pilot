@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nubtk_pilot/features/home/languages/language_provider.dart';
+import 'package:nubtk_pilot/features/ai_bot/finance_ai_handler.dart';
 import '../../core/constants/app_strings.dart';
 
 class AIBotScreen extends StatefulWidget {
@@ -12,96 +13,121 @@ class AIBotScreen extends StatefulWidget {
 
 class _AIBotScreenState extends State<AIBotScreen> {
   final TextEditingController _controller = TextEditingController();
-  final List<_Message> _messages = [];
+  final List<Map<String, dynamic>> _messages = [];
+  bool _isLoading = false;
 
-  void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
+  Future<void> _handleSend() async {
+    String text = _controller.text.trim();
+    if (text.isEmpty) return;
 
     setState(() {
-      _messages.add(_Message(text: text, isUser: true));
-      // Dummy AI response
-      _messages.add(_Message(
-        text: 'AI Response: I got your message "$text"',
-        isUser: false,
-      ));
+      _messages.add({"text": text, "isUser": true});
+      _isLoading = true;
     });
-
     _controller.clear();
+
+    try {
+      final result = await FinanceAIHandler.analyzeProject(text);
+      setState(() {
+        _messages.add({
+          "text": "📊 Summary: ${result['summary']}\n\n🏆 Score: ${result['score']}/100\n\n💡 Improvement: ${result['improvement']}",
+          "isUser": false
+        });
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add({"text": "Error: Failed to connect to AI.", "isUser": false});
+      });
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final languageCode = Provider.of<LanguageProvider>(context).languageCode;
+    final lang = Provider.of<LanguageProvider>(context).languageCode;
 
     return Scaffold(
+      backgroundColor: Colors.white, // ব্যাকগ্রাউন্ড সাদা করে দিলাম স্পষ্ট দেখানোর জন্য
       appBar: AppBar(
-        title: Text(AppStrings.askAIBot[languageCode]!),
-        centerTitle: true,
+        title: Text(AppStrings.askAIBot[lang]!, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.indigo[900], // গাঢ় রঙ
+        elevation: 1,
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
-                return Align(
-                  alignment:
-                      msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: msg.isUser ? Colors.indigo : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      msg.text,
-                      style: TextStyle(
-                        color: msg.isUser ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                  ),
-                );
+                return _buildChatBubble(msg["text"], msg["isUser"]);
               },
             ),
           ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: languageCode == 'bn'
-                          ? 'এখানে টাইপ করুন...'
-                          : 'Type your message...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () => _sendMessage(_controller.text),
-                  child: const Icon(Icons.send),
-                ),
-              ],
-            ),
-          ),
+          if (_isLoading) const LinearProgressIndicator(),
+          _buildInputArea(lang),
         ],
       ),
     );
   }
-}
 
-class _Message {
-  final String text;
-  final bool isUser;
-  _Message({required this.text, required this.isUser});
+  Widget _buildChatBubble(String text, bool isUser) {
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isUser ? Colors.indigo : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+        child: Text(
+          text,
+          style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 16),
+        ),
+      ),
+    );
+  }
+
+  // স্পষ্ট এবং শার্প ইনপুট বক্স
+  Widget _buildInputArea(String lang) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[300]!, width: 1)),
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                style: const TextStyle(color: Colors.black, fontSize: 16),
+                decoration: InputDecoration(
+                  hintText: lang == 'bn' ? 'এখানে লিখুন...' : 'Type here...',
+                  hintStyle: TextStyle(color: Colors.grey[500]),
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[400]!),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.send_rounded, color: Colors.indigo, size: 28),
+              onPressed: _isLoading ? null : _handleSend,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -26,3 +26,14 @@ Google Account-এর সার্চ বারে (উপরে) গিয়ে �
 অথবা এই লিঙ্কে সরাসরি যান: https://myaccount.google.com/apppasswords।
 
 এখানে 'App Name' এ 'Flutter App' লিখে Create ক্লিক করুন। আপনাকে ১৬ অক্ষরের একটি কোড দিবে। এটিই আপনার পাসওয়ার্ড, যা index.js ফাইলে বসাতে হবে।
+
+
+https://dashboard.emailjs.com/sign-up
+EmailJS
+Your Name
+Bashir Alam
+Your Email
+alambashir257@gmail.com
+Password
+@#Borhan1$
+Bot Protection

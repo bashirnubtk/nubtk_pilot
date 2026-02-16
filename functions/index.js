@@ -1,32 +1,69 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
+admin.initializeApp();
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+const genAI = new GoogleGenerativeAI(functions.config().gemini.key);
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+exports.analyzeProject = functions.https.onCall(async (data, context) => {
+  try {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "User must be logged in."
+      );
+    }
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+    const userInput = data.text;
+
+    if (!userInput) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Text input is required."
+      );
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+    const prompt = `
+You are a professional academic project evaluator.
+
+Analyze the following project description and respond ONLY in valid JSON format.
+
+Return:
+{
+  "summary": "...",
+  "strength": "...",
+  "weakness": "...",
+  "score": 0-100,
+  "improvement": "..."
+}
+
+Project:
+${userInput}
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Parse Gemini response to JSON
+    const cleaned = text.replace(/```json|```/g, "").trim();
+    const jsonOutput = JSON.parse(cleaned);
+
+    // Save to Firestore
+    await admin.firestore().collection("ai_results").add({
+      userId: context.auth.uid,
+      input: userInput,
+      output: jsonOutput,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return jsonOutput;
+
+  } catch (error) {
+    console.error(error);
+    throw new functions.https.HttpsError("internal", error.message);
+  }
+});
