@@ -4,7 +4,8 @@ import '../../core/constants/app_strings.dart';
 import 'languages/language_provider.dart';
 import '../auth/login_screen.dart';
 import '../auth/register_screen.dart';
-import '../ai_bot/ai_bot_screen.dart';
+// এখানে নিশ্চিত করুন আপনার ফাইলের নাম ai_bot_screen.dart
+import '../ai_bot/ai_bot_screen.dart'; 
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -69,6 +70,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // --- Widgets Below ---
+
   Widget _headerGreeting() {
     return Container(
       width: double.infinity,
@@ -107,7 +110,8 @@ class HomeScreen extends StatelessWidget {
 
   Widget _aiAssistantButton(String languageCode, BuildContext context) {
     return InkWell(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AIBotScreen())),
+      // এখানে আপনার ক্লাসের নাম AiBotScreen হলে সেটিই দিন
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiBotScreen())), 
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
@@ -238,6 +242,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+// Internal Widgets
 class _NoticeCard extends StatelessWidget {
   final String title;
   final String subtitle;

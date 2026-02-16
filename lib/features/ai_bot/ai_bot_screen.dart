@@ -4,14 +4,15 @@ import 'package:nubtk_pilot/features/home/languages/language_provider.dart';
 import 'package:nubtk_pilot/features/ai_bot/finance_ai_handler.dart';
 import '../../core/constants/app_strings.dart';
 
-class AIBotScreen extends StatefulWidget {
-  const AIBotScreen({super.key});
+// নামের বানান 'AiBotScreen' করা হয়েছে যাতে ড্যাশবোর্ড থেকে একে খুঁজে পাওয়া যায়
+class AiBotScreen extends StatefulWidget {
+  const AiBotScreen({super.key});
 
   @override
-  State<AIBotScreen> createState() => _AIBotScreenState();
+  State<AiBotScreen> createState() => _AiBotScreenState();
 }
 
-class _AIBotScreenState extends State<AIBotScreen> {
+class _AiBotScreenState extends State<AiBotScreen> {
   final TextEditingController _controller = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
   bool _isLoading = false;
@@ -27,6 +28,7 @@ class _AIBotScreenState extends State<AIBotScreen> {
     _controller.clear();
 
     try {
+      // এখানে FinanceAIHandler কল করা হচ্ছে
       final result = await FinanceAIHandler.analyzeProject(text);
       setState(() {
         _messages.add({
@@ -36,7 +38,7 @@ class _AIBotScreenState extends State<AIBotScreen> {
       });
     } catch (e) {
       setState(() {
-        _messages.add({"text": "Error: Failed to connect to AI.", "isUser": false});
+        _messages.add({"text": "Error: Failed to connect to AI. Please check your internet or API key.", "isUser": false});
       });
     } finally {
       setState(() => _isLoading = false);
@@ -48,10 +50,10 @@ class _AIBotScreenState extends State<AIBotScreen> {
     final lang = Provider.of<LanguageProvider>(context).languageCode;
 
     return Scaffold(
-      backgroundColor: Colors.white, // ব্যাকগ্রাউন্ড সাদা করে দিলাম স্পষ্ট দেখানোর জন্য
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(AppStrings.askAIBot[lang]!, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Colors.indigo[900], // গাঢ় রঙ
+        title: Text(AppStrings.askAIBot[lang] ?? "Ask AI Bot", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.indigo[900],
         elevation: 1,
       ),
       body: Column(
@@ -92,7 +94,6 @@ class _AIBotScreenState extends State<AIBotScreen> {
     );
   }
 
-  // স্পষ্ট এবং শার্প ইনপুট বক্স
   Widget _buildInputArea(String lang) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -109,14 +110,9 @@ class _AIBotScreenState extends State<AIBotScreen> {
                 style: const TextStyle(color: Colors.black, fontSize: 16),
                 decoration: InputDecoration(
                   hintText: lang == 'bn' ? 'এখানে লিখুন...' : 'Type here...',
-                  hintStyle: TextStyle(color: Colors.grey[500]),
                   filled: true,
                   fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[400]!),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ),

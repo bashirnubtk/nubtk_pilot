@@ -1,4 +1,6 @@
 
+E:\Projects\nubtk_pilot\android\app\google-services.json
+E:\Projects\nubtk_pilot\functions\index.js
 E:\Projects\nubtk_pilot\lib\core\constants\app_strings.dart
 
 E:\Projects\nubtk_pilot\lib\core\localization\app_language.dart
@@ -13,6 +15,8 @@ E:\Projects\nubtk_pilot\lib\features\admin\admin_dashboard.dart
 E:\Projects\nubtk_pilot\lib\features\admin\admin_data_service.dart
 E:\Projects\nubtk_pilot\lib\features\admin\admin_payment_control.dart
 E:\Projects\nubtk_pilot\lib\features\admin\admin_screen.dart
+E:\Projects\nubtk_pilot\lib\features\admin\admin_student_controller.dart
+
 
 E:\Projects\nubtk_pilot\lib\features\ai_bot\ai_bot_screen.dart
 E:\Projects\nubtk_pilot\lib\features\ai_bot\finance_ai_handler.dart

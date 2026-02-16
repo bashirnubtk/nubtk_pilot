@@ -1,18 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nubtk_pilot/features/auth/email_service.dart';
-import 'dart:math';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AdminStudentController {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // স্টুডেন্ট আইডি জেনারেট করার লজিক
-  String _generateDigitalId() {
-    final random = Random();
-    int idNumber = 100000 + random.nextInt(900000);
-    return "NUBTK-$idNumber";
-  }
+  // EmailJS Credentials (আপনার স্ক্রিনশট থেকে নেওয়া)
+  final String serviceId = 'service_xxxx'; // আপনার Service ID দিন
+  final String templateId = 'template_xxxx'; // আপনার Template ID দিন
+  final String publicKey = 'fi29Echo77ndbm7kN'; 
+  final String privateKey = 'ttxoiGZEDBexD8XCjdKuh';
 
-  // এপ্রুভ এবং ইমেইল পাঠানোর মেইন ফাংশন
   Future<void> approveAndSendEmail({
     required String studentId,
     required String name,
@@ -20,36 +18,46 @@ class AdminStudentController {
   }) async {
     try {
       final docRef = _db.collection('students').doc(studentId);
-      final doc = await docRef.get();
+      final counterRef = _db.collection('counters').doc('student_id');
 
-      // যদি অলরেডি এপ্রুভড হয়, তবে আর কাজ করবে না
-      if (doc.exists && doc.data()!['approved'] == true) {
-        print("Student already approved.");
-        return;
-      }
+      String generatedId = "";
 
-      final digitalId = _generateDigitalId();
+      await _db.runTransaction((transaction) async {
+        DocumentSnapshot counterSnap = await transaction.get(counterRef);
+        int current = counterSnap.exists ? (counterSnap.get('current') ?? 0) : 0;
+        int newSerial = current + 1;
+        generatedId = "NUBTK-${DateTime.now().year}-${newSerial.toString().padLeft(4, '0')}";
 
-      // ১. ফায়ারস্টোরে এপ্রুভাল এবং আইডি আপডেট
-      await docRef.update({
-        'approved': true,
-        'digitalId': digitalId,
-        'updatedAt': FieldValue.serverTimestamp(),
+        transaction.update(docRef, {
+          'status': 'approved',
+          'approved': true,
+          'digitalId': generatedId,
+        });
+        transaction.set(counterRef, {'current': newSerial});
       });
 
-      // ২. আপনার সেই SMTP (App Password) ব্যবহার করে ইমেইল পাঠানো
-      await EmailService.sendDigitalID(
-        recipientEmail: email,
-        studentName: name,
-        digitalId: digitalId,
+      // API Call
+      final response = await http.post(
+        Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'service_id': serviceId,
+          'template_id': templateId,
+          'user_id': publicKey,
+          'accessToken': privateKey,
+          'template_params': {
+            'to_name': name,
+            'to_email': email,
+            'digital_id': generatedId,
+          }
+        }),
       );
 
-      // ৩. ইমেইল পাঠানো সফল হলে স্ট্যাটাস আপডেট
-      await docRef.update({'emailSent': true});
-      
-      print("Process Completed: Approved & Email Sent.");
+      if (response.statusCode == 200) {
+        await docRef.update({'emailSent': true});
+      }
     } catch (e) {
-      print("Error in Admin Action: $e");
+      throw Exception("Approval failed: $e");
     }
   }
 }
