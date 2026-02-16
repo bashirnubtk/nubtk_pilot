@@ -242,6 +242,10 @@ git add .
 git commit -m "feat: complete cloud functions setup and id generation logic"
 git push origin dev
 
+git add .
+git commit -m "AI bot UI improved and SMTP email service added"
+git push origin dev
+
 প্রজেক্টের শেষে
 git checkout main
 git merge dev
