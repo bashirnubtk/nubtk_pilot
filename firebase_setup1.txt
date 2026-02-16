@@ -4,6 +4,9 @@ NEW LAPTOP FIREBASE & NODE SETUP COMMANDS
 
 ১. Node.js এবং NPM ভার্সন চেক:
    কমান্ড: node -v
+সমস্যার সমাধান (PowerShell Error Fix)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
    কমান্ড: npm -v
 
 ২. ফায়ারবেস টুলস ইনস্টল করা (একবারই করতে হবে):
