@@ -3,10 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../core/constants/app_strings.dart';
-import '../home/home_screen.dart';
-import '../student/models/student_model.dart';
-import '../student/student_services/data_service.dart';
 import '../home/languages/language_provider.dart';
 // নতুন ইম্পোর্টটি যুক্ত করা হয়েছে
 import 'waiting_approval_screen.dart'; 
@@ -314,7 +310,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: DropdownButtonFormField<String>(
-        value: _selectedDept,
+        initialValue: _selectedDept,
         decoration: InputDecoration(
           labelText: 'Department',
           prefixIcon: Icon(Icons.business, color: Colors.indigo.shade300),
