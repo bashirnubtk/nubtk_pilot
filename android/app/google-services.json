@@ -12,7 +12,12 @@
           "package_name": "com.nubtk.pilot"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "396396597164-255gim32aj5964lq5hd0up1ljocpkqbr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDKA1fVsojEnvmKW06ZjP8k6en3AMUrmSE"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "396396597164-255gim32aj5964lq5hd0up1ljocpkqbr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

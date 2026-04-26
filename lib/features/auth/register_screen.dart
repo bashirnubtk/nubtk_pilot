@@ -1,11 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import '../home/languages/language_provider.dart';
-// নতুন ইম্পোর্টটি যুক্ত করা হয়েছে
-import 'waiting_approval_screen.dart'; 
+import 'waiting_approval_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -33,6 +32,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final List<String> departments = ['CSE', 'EEE', 'BBA', 'English', 'Law'];
 
+  @override
+  void dispose() {
+    _name.dispose();
+    _father.dispose();
+    _mother.dispose();
+    _email.dispose();
+    _phone.dispose();
+    _ssc.dispose();
+    _hsc.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickFile(String type) async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -56,59 +67,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // আপডেট করা সাবমিট মেথড
   void _submit(String lang) async {
     if (!_formKey.currentState!.validate()) return;
-    
-    // ফাইল চেক
+
     if (_photoPath.isEmpty || _sscPath.isEmpty || _hscPath.isEmpty) {
       _showError("Please upload your photo and all marksheets.");
       return;
     }
 
-    setState(() => _isLoading = true); 
+    setState(() => _isLoading = true);
 
     try {
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _email.text.trim(),
-        password: _phone.text.trim(), 
-      );
+      String tempId = _email.text.trim().replaceAll('.', '_');
 
-      final String uid = userCredential.user!.uid; 
-      
-      // ডাটাবেজে ডাটা সেভ (কালেকশন নাম 'users' হিসেবে আপডেট করা হয়েছে আপনার চাহিদা অনুযায়ী)
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'id': uid,
-        'fullName': _name.text,
-        'email': _email.text,
-        'phone': _phone.text,
+      await FirebaseFirestore.instance.collection('users').doc(tempId).set({
+        'id': tempId,
+        'fullName': _name.text.trim(),
+        'fatherName': _father.text.trim(),
+        'motherName': _mother.text.trim(),
+        'email': _email.text.trim(),
+        'phone': _phone.text.trim(),
         'role': 'student',
         'department': _selectedDept ?? 'General',
-        'sscGpa': double.tryParse(_ssc.text),
-        'hscGpa': double.tryParse(_hsc.text),
-        'photoUrl': _photoPath,
-        'sscMarksheetPath': _sscPath, 
-        'hscMarksheetPath': _hscPath, 
+        'sscGpa': double.tryParse(_ssc.text) ?? 0.0,
+        'hscGpa': double.tryParse(_hsc.text) ?? 0.0,
+        'photoUrl': _photoPath, // Note: In production, upload file to Firebase Storage first
+        'sscMarksheetPath': _sscPath,
+        'hscMarksheetPath': _hscPath,
         'status': 'pending',
-        'createdAt': DateTime.now(),
+        'createdAt': FieldValue.serverTimestamp(),
       });
 
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      // সরাসরি ওয়েটিং স্ক্রিনে চলে যাবে
       Navigator.pushAndRemoveUntil(
-        context, 
+        context,
         MaterialPageRoute(builder: (_) => const WaitingApprovalScreen()),
-        (route) => false
+        (route) => false,
       );
-
-    } on FirebaseAuthException catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-      _showError(e.message ?? "Authentication failed");
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
-      _showError("Error: $e");
+      _showError("Submission Error: $e");
     }
   }
 
@@ -122,7 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context).languageCode;
-    
+
     return Scaffold(
       body: Stack(
         children: [
@@ -174,7 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           key: _formKey,
                           child: Column(
                             children: [
-                              _photoPicker(lang),
+                              _photoPicker(),
                               const SizedBox(height: 30),
                               _buildCardSection("Personal Information", [
                                 _field(_name, "Full Name", Icons.person_outline),
@@ -218,7 +218,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                                     elevation: 4,
                                   ),
-                                  child: const Text("SUBMIT APPLICATION", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                                  child: const Text("SUBMIT APPLICATION",
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                                 ),
                               ),
                               const SizedBox(height: 50),
@@ -232,12 +233,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
-          // ওয়েটিং পেজ ওভারলে
           if (_isLoading)
             Container(
-              color: Colors.black.withOpacity(0.7),
-              width: double.infinity,
-              height: double.infinity,
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -248,14 +246,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       "Processing Your Application...",
                       style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500),
                     ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-                      child: Text(
-                        "Please wait a moment while we set up your profile.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
-                      ),
-                    )
                   ],
                 ),
               ),
@@ -265,7 +255,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // নিচের ডিজাইন উইজেটগুলো অপরিবর্তিত রাখা হয়েছে
   Widget _buildCardSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,7 +268,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(25),
-            boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 15, offset: const Offset(0, 8))],
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 15, offset: const Offset(0, 8))
+            ],
           ),
           child: Column(children: children),
         ),
@@ -334,29 +325,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
         decoration: BoxDecoration(
           border: Border.all(color: path.isEmpty ? Colors.grey.shade300 : Colors.green),
           borderRadius: BorderRadius.circular(15),
-          color: path.isEmpty ? Colors.transparent : Colors.green.withAlpha(10),
+          color: path.isEmpty ? Colors.transparent : Colors.green.withValues(alpha: 0.1),
         ),
         child: Row(
           children: [
-            Icon(path.isEmpty ? Icons.cloud_upload_outlined : Icons.check_circle, color: path.isEmpty ? Colors.grey : Colors.green),
+            Icon(path.isEmpty ? Icons.cloud_upload_outlined : Icons.check_circle,
+                color: path.isEmpty ? Colors.grey : Colors.green),
             const SizedBox(width: 10),
-            Expanded(child: Text(label, style: TextStyle(color: path.isEmpty ? Colors.grey.shade700 : Colors.green.shade700), overflow: TextOverflow.ellipsis)),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(color: path.isEmpty ? Colors.grey.shade700 : Colors.green.shade700),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _photoPicker(String lang) {
+  Widget _photoPicker() {
     return Column(
       children: [
         CircleAvatar(
           radius: 50,
           backgroundColor: Colors.indigo.shade50,
-          // বাস্তব অ্যাপে এখানে FileImage ব্যবহার করতে হবে যদি লোকাল পাথ থাকে
-          backgroundImage: _photoPath.isNotEmpty ? AssetImage(_photoPath) : null,
+          backgroundImage: _photoPath.isNotEmpty ? FileImage(File(_photoPath)) : null,
           child: _photoPath.isEmpty ? Icon(Icons.add_a_photo, size: 40, color: Colors.indigo.shade200) : null,
         ),
+        const SizedBox(height: 8),
         TextButton(
           onPressed: () => _pickFile('photo'),
           child: const Text("Upload Student Photo", style: TextStyle(fontWeight: FontWeight.bold)),

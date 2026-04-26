@@ -254,7 +254,13 @@ git push origin dev
 git checkout main
 git merge dev
 git commit -m "release: final version with all features implemented"
-git push origin main
+git push origin dev
+
+
+
+git add .
+git commit -m "refactor: fix deprecated member use and clean up lint warnings"
+git push origin dev
 
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
