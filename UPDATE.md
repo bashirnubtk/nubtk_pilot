@@ -282,6 +282,10 @@ git add .
 git commit -m "feat(payment): fix student payment screen imports and android build configuration" -m "Fixed missing URI targets, updated NDK version to 28.2.13676358, and corrected package naming issues in MainActivity."
 git push origin dev
 
+git add .
+git commit -m "fix(nav): resolve logout navigation loop and improve admin dashboard structure" -m "- Updated logout logic to clear navigation stack. - Prepared Admin Dashboard with grid widgets. - Integrated AI assistant access for admin."
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

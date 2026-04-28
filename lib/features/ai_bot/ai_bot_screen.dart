@@ -1,10 +1,13 @@
+// ai_bot_screen.dart
+
+import 'dart:typed_data'; // ছবির ডাটার জন্য
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart'; // ইমেজ পিকার
 import 'package:provider/provider.dart';
 import 'package:nubtk_pilot/features/home/languages/language_provider.dart';
 import 'package:nubtk_pilot/features/ai_bot/finance_ai_handler.dart';
 import '../../core/constants/app_strings.dart';
 
-// নামের বানান 'AiBotScreen' করা হয়েছে যাতে ড্যাশবোর্ড থেকে একে খুঁজে পাওয়া যায়
 class AiBotScreen extends StatefulWidget {
   const AiBotScreen({super.key});
 
@@ -14,31 +17,65 @@ class AiBotScreen extends StatefulWidget {
 
 class _AiBotScreenState extends State<AiBotScreen> {
   final TextEditingController _controller = TextEditingController();
+  final ImagePicker _picker = ImagePicker(); // ইমেজ পিকার অবজেক্ট
   final List<Map<String, dynamic>> _messages = [];
   bool _isLoading = false;
+  Uint8List? _selectedImageBytes; // সিলেক্ট করা ছবির ডাটা
 
-  Future<void> _handleSend() async {
+  // ছবি সিলেক্ট করার ফাংশন
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      setState(() {
+        _selectedImageBytes = bytes;
+        // ছবি সিলেক্ট হলেই চ্যাটে দেখাব (লোকালি)
+        _messages.add({"text": "[Image Attached]", "isUser": true, "image": bytes});
+      });
+      // ছবি সিলেক্ট হওয়ার পর অটোমেটিক AI-তে পাঠাব
+      _handleSend(fromImage: true);
+    }
+  }
+
+  // মেসেজ বা ছবি পাঠানোর ফাংশন (আপডেট করা হয়েছে)
+  Future<void> _handleSend({bool fromImage = false}) async {
     String text = _controller.text.trim();
-    if (text.isEmpty) return;
+    
+    // ছবি বা টেক্সট—যেকোনো একটা অবশ্যই থাকতে হবে
+    if (text.isEmpty && _selectedImageBytes == null) return;
 
-    setState(() {
-      _messages.add({"text": text, "isUser": true});
-      _isLoading = true;
-    });
+    if (!fromImage && text.isNotEmpty) {
+       setState(() {
+        _messages.add({"text": text, "isUser": true});
+        _isLoading = true;
+      });
+    } else if (fromImage) {
+      // যদি শুধু ছবি হয়, চ্যাট বাবল অলরেডি _pickImage-এ অ্যাড হয়েছে
+       setState(() {
+        _isLoading = true;
+      });
+    }
+    
     _controller.clear();
 
     try {
-      // এখানে FinanceAIHandler কল করা হচ্ছে
-      final result = await FinanceAIHandler.analyzeProject(text);
+      // FinanceAIHandler-কে টেক্সট এবং ছবি দুটোই দিচ্ছি
+      final result = await FinanceAIHandler.analyzeInput(
+        textInput: text.isNotEmpty ? text : null,
+        imageBytes: _selectedImageBytes,
+      );
+      
       setState(() {
         _messages.add({
-          "text": "📊 Summary: ${result['summary']}\n\n🏆 Score: ${result['score']}/100\n\n💡 Improvement: ${result['improvement']}",
+          "text": "${result['reply']}\n\n💡 Tip: ${result['suggestion']}",
           "isUser": false
         });
+        _selectedImageBytes = null; // ছবি পাঠানো শেষ, তাই নাল করে দিই
       });
     } catch (e) {
       setState(() {
-        _messages.add({"text": "Error: Failed to connect to AI. Please check your internet or API key.", "isUser": false});
+        _messages.add({"text": "এরর: AI-এর সাথে সংযোগ বিচ্ছিন্ন হয়েছে।", "isUser": false});
+        _selectedImageBytes = null;
       });
     } finally {
       setState(() => _isLoading = false);
@@ -52,7 +89,7 @@ class _AiBotScreenState extends State<AiBotScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(AppStrings.askAIBot[lang] ?? "Ask AI Bot", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text(AppStrings.askAIBot[lang] ?? "NUBTK AI", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: Colors.indigo[900],
         elevation: 1,
       ),
@@ -64,7 +101,7 @@ class _AiBotScreenState extends State<AiBotScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
-                return _buildChatBubble(msg["text"], msg["isUser"]);
+                return _buildChatBubble(msg);
               },
             ),
           ),
@@ -75,7 +112,11 @@ class _AiBotScreenState extends State<AiBotScreen> {
     );
   }
 
-  Widget _buildChatBubble(String text, bool isUser) {
+  // চ্যাট বাবল আপডেট (ছবি সাপোর্ট করার জন্য)
+  Widget _buildChatBubble(Map<String, dynamic> msg) {
+    bool isUser = msg["isUser"];
+    Uint8List? imageBytes = msg["image"];
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -86,14 +127,28 @@ class _AiBotScreenState extends State<AiBotScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-        child: Text(
-          text,
-          style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (imageBytes != null) // যদি ছবি থাকে, তবে দেখাব
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.memory(imageBytes, fit: BoxFit.cover, height: 150),
+                ),
+              ),
+            Text(
+              msg["text"],
+              style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 16),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  // ইনপুট এরিয়া আপডেট (ছবির বাটন যোগ করা হয়েছে)
   Widget _buildInputArea(String lang) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -104,6 +159,12 @@ class _AiBotScreenState extends State<AiBotScreen> {
       child: SafeArea(
         child: Row(
           children: [
+            // ছবির বাটন (গ্যালারি)
+            IconButton(
+              icon: const Icon(Icons.image_outlined, color: Colors.indigo, size: 28),
+              onPressed: _isLoading ? null : _pickImage,
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: _controller,
@@ -119,7 +180,7 @@ class _AiBotScreenState extends State<AiBotScreen> {
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.send_rounded, color: Colors.indigo, size: 28),
-              onPressed: _isLoading ? null : _handleSend,
+              onPressed: _isLoading ? null : () => _handleSend(fromImage: false),
             ),
           ],
         ),

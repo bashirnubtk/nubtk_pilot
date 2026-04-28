@@ -52,9 +52,9 @@ class PaymentPdfService {
                 // পেমেন্ট স্ট্যাটাস বক্স
                 pw.Container(
                   padding: const pw.EdgeInsets.all(10),
-                  decoration: pw.BoxDecoration(
+                  decoration: const pw.BoxDecoration(
                     color: PdfColors.green100,
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+                    borderRadius: pw.BorderRadius.all(pw.Radius.circular(5)),
                   ),
                   child: pw.Text(
                     "STATUS: PAID SUCCESSFULLY",
