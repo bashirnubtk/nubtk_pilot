@@ -1,43 +1,49 @@
 import 'package:flutter/material.dart';
-import '../../payment/payment_model.dart'; // এই ইমপোর্টটি নিশ্চিত করুন
 
 class PaymentTile extends StatelessWidget {
-  final Installment installment;
+  final Map<String, dynamic> paymentData; // আমরা সরাসরি ফায়ারস্টোর ম্যাপ ব্যবহার করছি
+  final VoidCallback? onDownload; // রিসিট ডাউনলোডের জন্য
   final VoidCallback? onPay;
 
-  const PaymentTile({super.key, required this.installment, this.onPay});
+  const PaymentTile({
+    super.key, 
+    required this.paymentData, 
+    this.onDownload, 
+    this.onPay
+  });
 
   @override
   Widget build(BuildContext context) {
+    bool isPaid = paymentData['status'] == 'Paid';
+    String percentage = paymentData['percentage'] ?? '0%';
+    String month = paymentData['month'] ?? 'N/A';
+
     return Card(
-      elevation: 2,
+      elevation: 1,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: installment.isPaid ? Colors.green.withAlpha(30) : Colors.orange.withAlpha(30),
+          backgroundColor: isPaid ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
           child: Icon(
-            installment.isPaid ? Icons.check_circle : Icons.pending_actions,
-            color: installment.isPaid ? Colors.green : Colors.orange,
+            isPaid ? Icons.check_circle_rounded : Icons.pending_rounded,
+            color: isPaid ? Colors.green : Colors.orange,
           ),
         ),
         title: Text(
-          'Installment ${installment.semester}', // এখানে 'semester' এখন মডেলে আছে
+          'Tuition Fee - $percentage', 
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          'Amount: ৳${installment.amount.toStringAsFixed(0)}\nDue Date: ${installment.dueDate.toLocal().toString().split(' ')[0]}',
+          'Month: $month\nStatus: ${isPaid ? "Received" : "Due"}',
           style: const TextStyle(fontSize: 13, color: Colors.grey),
         ),
-        trailing: installment.isPaid
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.green.withAlpha(40),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text("Paid", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+        trailing: isPaid
+            ? IconButton(
+                icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent),
+                onPressed: onDownload, // এখানে ক্লিক করলে পিডিএফ ডাউনলোড হবে
+                tooltip: "Download Receipt",
               )
             : ElevatedButton(
                 onPressed: onPay,
