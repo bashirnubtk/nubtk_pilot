@@ -274,6 +274,10 @@ git add .
 git commit -m "feat: add payment notification banner to student dashboard"
 git push origin dev
 
+git add .
+git commit -m "feat: update payment tile UI and logic"
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
