@@ -27,19 +27,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
             onPressed: () {
-              // এখানে শুধু pushReplacement ব্যবহার করুন যাতে হোমপেজ থেকে আবার ব্যাকে গেলে অ্যাপ বন্ধ না হয়
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const HomeScreen()),
               );
             },
           ),
-          title: const Text("Admin Control Center", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: const Text("Admin Control Center",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           centerTitle: true,
         ),
         body: Column(
           children: [
-            // --- ৩টি স্ট্যাটাস বক্স (Visual Dashboard) ---
             Container(
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
               decoration: BoxDecoration(
@@ -58,7 +57,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ],
               ),
             ),
-            
             const TabBar(
               labelColor: Colors.indigo,
               unselectedLabelColor: Colors.grey,
@@ -69,12 +67,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Tab(text: "Fees"),
               ],
             ),
-
             Expanded(
               child: TabBarView(
                 children: [
                   _buildAdmissionTab(),
-                  _buildApprovedTab(),
+                  _buildApprovedTab(), // এখানে পেমেন্ট বাটন যুক্ত করা হয়েছে
                   _buildPaymentTab(),
                 ],
               ),
@@ -85,13 +82,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // স্ট্যাটাস আইকন উইজেট
   Widget _buildStatIcon(IconData icon, String label, Color color) {
     return Column(
       children: [
         CircleAvatar(
           radius: 25,
-          backgroundColor: Colors.white.withValues(alpha:0.2),
+          backgroundColor: Colors.white.withOpacity(0.2),
           child: Icon(icon, color: color, size: 28),
         ),
         const SizedBox(height: 5),
@@ -100,7 +96,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ১. এডমিশন ট্যাব (Approve & Reject বাটনসহ)
   Widget _buildAdmissionTab() {
     return StreamBuilder<QuerySnapshot>(
       stream: _service.getPendingStudents(),
@@ -118,7 +113,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               child: ListTile(
                 title: Text(data['fullName'] ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text("Dept: ${data['department']}\nGPA: ${data['sscGpa']} (S) | ${data['hscGpa']} (H)"),
+                subtitle: Text("Dept: ${data['department']}\nGPA: ${data['sscGpa']} | ${data['hscGpa']}"),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -145,7 +140,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ২. এপ্রুভড স্টুডেন্ট ট্যাব (আইডি-পাসওয়ার্ডসহ সব ডিটেইলস)
+  // --- ২. এপ্রুভড স্টুডেন্ট ট্যাব (যেখানে পেমেন্ট বাটন যুক্ত করা হয়েছে) ---
   Widget _buildApprovedTab() {
     return StreamBuilder<QuerySnapshot>(
       stream: _service.getApprovedStudents(),
@@ -157,32 +152,58 @@ class _AdminDashboardState extends State<AdminDashboard> {
           itemCount: docs.length,
           itemBuilder: (context, index) {
             var data = docs[index].data() as Map<String, dynamic>;
-            return ExpansionTile(
-              leading: const Icon(Icons.account_circle, color: Colors.indigo),
-              title: Text(data['fullName'] ?? ''),
-              subtitle: Text("ID: ${data['digitalId'] ?? 'Processing'}"),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  color: Colors.grey[100],
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("System Password: ${data['systemPassword'] ?? 'N/A'}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-                      Text("Email: ${data['email']}"),
-                      Text("SSC GPA: ${data['sscGpa']} | HSC GPA: ${data['hscGpa']}"),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          onPressed: () => _service.deleteOrRejectStudent(docs[index].id),
-                          icon: const Icon(Icons.person_remove, color: Colors.red, size: 18),
-                          label: const Text("Remove Student", style: TextStyle(color: Colors.red)),
-                        ),
-                      )
-                    ],
+            String studentUid = docs[index].id;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ExpansionTile(
+                leading: const Icon(Icons.account_circle, color: Colors.indigo),
+                title: Text(data['fullName'] ?? 'No Name'),
+                subtitle: Text("ID: ${data['digitalId'] ?? 'Processing'}"),
+                trailing: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                   ),
-                )
-              ],
+                  onPressed: () async {
+                    // পেমেন্ট কনফার্ম করার লজিক
+                    try {
+                      await _controller.makePayment(studentUid, 0); // ০ মানে ১ম কিস্তি
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Payment Approved Successfully!")),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Error: $e")),
+                      );
+                    }
+                  },
+                  child: const Text("Pay", style: TextStyle(color: Colors.white, fontSize: 12)),
+                ),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    color: Colors.grey[100],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("System Password: ${data['systemPassword'] ?? 'N/A'}",
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                        Text("Email: ${data['email']}"),
+                        Text("Dept: ${data['department']}"),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () => _service.deleteOrRejectStudent(studentUid),
+                            icon: const Icon(Icons.person_remove, color: Colors.red, size: 18),
+                            label: const Text("Remove", style: TextStyle(color: Colors.red)),
+                          ),
+                        )
+                      ],
+                    ),
+                  )
+                ],
+              ),
             );
           },
         );
@@ -190,7 +211,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ৩. পেমেন্ট ট্যাব (ভবিষ্যতের জন্য রাখা হয়েছে)
   Widget _buildPaymentTab() {
     return const Center(child: Text("Payment History & Records Coming Soon..."));
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Firebase Auth ইমপোর্ট করা হয়েছে
+import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_service.dart';
 import '../student/screens/student_dashboard_screen.dart';
-import '../admin/admin_screen.dart'; 
+import '../admin/admin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,49 +49,39 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // ২. আসল ফায়ারবেস লগইন লজিক
       // স্টুডেন্ট বা অ্যাডমিন উভয়েই তাদের ইমেইল এবং সিস্টেম জেনারেটেড পাসওয়ার্ড দিয়ে লগইন করবে
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailInput,
-        password: passInput,
-      );
+      // AuthService-এর নতুন লজিক অনুযায়ী এটি হ্যান্ডেল হবে
+      String? loginResult = await _auth.login(emailInput, passInput);
 
-      final user = userCredential.user;
-
-      if (user != null) {
-        // ফায়ারস্টোর থেকে ইউজারের রোল (student/admin) চেক করা
-        final role = await _auth.getRole(user.uid);
+      if (loginResult != null) {
+        // যদি কোনো এরর মেসেজ আসে
         if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loginResult)));
+      } else {
+        // লগইন সফল হলে রোল চেক করে ডিরেক্ট করা
+        User? user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final role = await _auth.getRole(user.uid);
+          if (!mounted) return;
 
-        // মোড অনুযায়ী সঠিক স্ক্রিনে পাঠানো
-        if (role == 'student' && !_isAdminMode) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const StudentDashboardScreen()),
-            (route) => false,
-          );
-        } else if (role == 'admin' && _isAdminMode) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminDashboard()),
-            (route) => false,
-          );
-        } else {
-          // যদি অ্যাডমিন মোডে স্টুডেন্ট লগইন করতে চায় বা উল্টোটা হয়
-          await FirebaseAuth.instance.signOut(); // ভুল লগইন সেশন আউট করা
-          throw Exception("Role mismatch! You are trying to log in as ${role.toUpperCase()} in ${_isAdminMode ? 'ADMIN' : 'STUDENT'} portal.");
+          if (role == 'student' && !_isAdminMode) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const StudentDashboardScreen()),
+              (route) => false,
+            );
+          } else if (role == 'admin' && _isAdminMode) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminDashboard()),
+              (route) => false,
+            );
+          } else {
+            await FirebaseAuth.instance.signOut();
+            throw Exception("Role mismatch! You are trying to log in as ${role.toUpperCase()} in ${_isAdminMode ? 'ADMIN' : 'STUDENT'} portal.");
+          }
         }
       }
-    } on FirebaseAuthException catch (authError) {
-      // ফায়ারবেস রিলেটেড এরর মেসেজ হ্যান্ডলিং
-      String errorMessage = "Login failed. Please check your credentials.";
-      if (authError.code == 'user-not-found') errorMessage = "No user found for this email.";
-      if (authError.code == 'wrong-password') errorMessage = "Incorrect password. Check your email for the system-generated password.";
-      if (authError.code == 'invalid-email') errorMessage = "The email address is badly formatted.";
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
-      }
     } catch (e) {
-      // অন্যান্য সাধারণ এরর
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
@@ -181,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         TextFormField(
                           controller: _email,
-                          keyboardType: TextInputType.emailAddress,
+                          keyboardType: TextInputType.text, // ইমেইল টাইপ থেকে টেক্সট টাইপ
                           decoration: InputDecoration(
                             labelText: "Digital ID / Email Address",
                             hintText: 'e.g. NUBTK-BBA-2026-0003',
@@ -192,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (value == null || value.isEmpty) {
                               return 'আপনার ডিজিটাল আইডি বা ইমেইল লিখুন';
                             }
-                            return null;
+                            return null; // কোনো ইমেইল ফরম্যাট চেক নেই
                           },
                         ),
                         const SizedBox(height: 15),
@@ -236,7 +226,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// মোড বাটন (Student/Admin) তৈরির হেল্পার মেথড
   Widget _buildModeButton(String title, bool isActive) {
     return GestureDetector(
       onTap: () => setState(() {

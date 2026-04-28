@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'features/home/languages/language_provider.dart';
-import 'features/auth/auth_guard.dart'; // ইমপোর্ট করা হলো
+import 'features/auth/auth_guard.dart'; 
+import 'features/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +30,12 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      // এখন অ্যাপ চালু হলে AuthGuard আগে চেক করবে
-      home: const AuthGuard(), 
+      // এখানে 'home' সরিয়ে শুধু initialRoute রাখা হয়েছে
+      initialRoute: '/', 
+      routes: {
+        '/': (context) => const AuthGuard(), 
+        '/login': (context) => const LoginScreen(),
+      },
     );
   }
 }

@@ -278,6 +278,10 @@ git add .
 git commit -m "feat: update payment tile UI and logic"
 git push origin dev
 
+git add .
+git commit -m "feat(payment): fix student payment screen imports and android build configuration" -m "Fixed missing URI targets, updated NDK version to 28.2.13676358, and corrected package naming issues in MainActivity."
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
