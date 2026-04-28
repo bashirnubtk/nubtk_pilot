@@ -290,6 +290,9 @@ git add .
 git commit -m "feat(admin): restructure admin dashboard into modular screens" -m "- Created AdminStudentListScreen and AdminPaymentApprovalScreen. - Fixed navigation loop and black screen issue using PopScope. - Integrated image-based AI analysis in AiBotScreen."
 git push origin dev
 
+git add .
+git commit -m "feat: update payment tile UI and logic"
+git push origin dev
 
 
 
