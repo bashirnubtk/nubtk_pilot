@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'admin_data_service.dart';
-import 'admin_student_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+// সঠিক পাথ অনুযায়ী ইমপোর্ট নিশ্চিত করুন
 import '../home/home_screen.dart';
+import '../ai_bot/ai_bot_screen.dart';
+import 'admin_student_list_screen.dart'; // স্টুডেন্ট লিস্ট স্ক্রিন
+import 'admin_payment_approval_screen.dart'; // পেমেন্ট এপ্রুভাল স্ক্রিন
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -12,67 +15,116 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  final AdminDataService _service = AdminDataService();
-  final AdminStudentController _controller = AdminStudentController();
+  
+  // লগআউট ফাংশন যা নেভিগেশন জট ক্লিয়ার করবে
+  void _logout() {
+    FirebaseAuth.instance.signOut().then((_) {
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FD),
-        appBar: AppBar(
-          backgroundColor: Colors.indigo[900],
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeScreen()),
-              );
-            },
-          ),
-          title: const Text("Admin Control Center",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          centerTitle: true,
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FD),
+      appBar: AppBar(
+        backgroundColor: Colors.indigo[900],
+        elevation: 0,
+        title: const Text(
+          "Admin Control Center",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        body: Column(
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: _logout,
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
           children: [
+            // উপরের নীল অংশ (Header)
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
               decoration: BoxDecoration(
                 color: Colors.indigo[900],
                 borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatIcon(Icons.hourglass_empty, "Pending", Colors.orangeAccent),
-                  _buildStatIcon(Icons.verified_user, "Approved", Colors.greenAccent),
-                  _buildStatIcon(Icons.monetization_on, "Payments", Colors.blueAccent),
+                  Text(
+                    "Welcome, Admin",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    "Manage your university system effectively",
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
                 ],
               ),
             ),
-            const TabBar(
-              labelColor: Colors.indigo,
-              unselectedLabelColor: Colors.grey,
-              indicatorWeight: 3,
-              tabs: [
-                Tab(text: "Admission"),
-                Tab(text: "Students"),
-                Tab(text: "Fees"),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
+
+            const SizedBox(height: 20),
+
+            // মেনু গ্রিড (Grid Menu)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 15,
+                mainAxisSpacing: 15,
                 children: [
-                  _buildAdmissionTab(),
-                  _buildApprovedTab(), // এখানে পেমেন্ট বাটন যুক্ত করা হয়েছে
-                  _buildPaymentTab(),
+                  // ধাপ ১: স্টুডেন্ট লিস্ট নেভিগেশন আপডেট
+                  _buildMenuCard(context, Icons.people, "Student List", Colors.blue, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const AdminStudentListScreen()),
+                    );
+                  }),
+
+                  // ধাপ ২: পেমেন্ট এপ্রুভাল নেভিগেশন আপডেট
+                  _buildMenuCard(context, Icons.payment, "Create Payment", Colors.green, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const AdminPaymentApprovalScreen()),
+                    );
+                  }),
+
+                  _buildMenuCard(context, Icons.quiz, "Create Quiz & CT", Colors.orange, () {
+                    // কুইজ পেজের কোড (ভবিষ্যত আপডেটের জন্য)
+                  }),
+                  
+                  _buildMenuCard(context, Icons.video_library, "Gift Class", Colors.red, () {
+                    // ক্লাস গিফট করার পেজ
+                  }),
+
+                  _buildMenuCard(context, Icons.auto_awesome, "AI Assistant", Colors.purple, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AiBotScreen()),
+                    );
+                  }),
+
+                  _buildMenuCard(context, Icons.update, "Update Info", Colors.teal, () {
+                    // আপডেট পেজ
+                  }),
                 ],
               ),
             ),
@@ -82,136 +134,41 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildStatIcon(IconData icon, String label, Color color) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 25,
-          backgroundColor: Colors.white.withOpacity(0.2),
-          child: Icon(icon, color: color, size: 28),
+  // মেনু কার্ড বানানোর উইজেট
+  Widget _buildMenuCard(BuildContext context, IconData icon, String title,
+      Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 2,
+              blurRadius: 10,
+            ),
+          ],
         ),
-        const SizedBox(height: 5),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-      ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: color.withOpacity(0.1),
+              child: Icon(icon, color: color, size: 30),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
     );
-  }
-
-  Widget _buildAdmissionTab() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _service.getPendingStudents(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var docs = snapshot.data!.docs;
-        if (docs.isEmpty) return const Center(child: Text("No new requests"));
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            var data = docs[index].data() as Map<String, dynamic>;
-            return Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              child: ListTile(
-                title: Text(data['fullName'] ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text("Dept: ${data['department']}\nGPA: ${data['sscGpa']} | ${data['hscGpa']}"),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => _service.deleteOrRejectStudent(docs[index].id),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                      onPressed: () => _controller.approveAndSendEmail(
-                        studentId: docs[index].id,
-                        name: data['fullName'],
-                        email: data['email'],
-                      ),
-                      child: const Text("Approve", style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // --- ২. এপ্রুভড স্টুডেন্ট ট্যাব (যেখানে পেমেন্ট বাটন যুক্ত করা হয়েছে) ---
-  Widget _buildApprovedTab() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _service.getApprovedStudents(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        var docs = snapshot.data!.docs;
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            var data = docs[index].data() as Map<String, dynamic>;
-            String studentUid = docs[index].id;
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ExpansionTile(
-                leading: const Icon(Icons.account_circle, color: Colors.indigo),
-                title: Text(data['fullName'] ?? 'No Name'),
-                subtitle: Text("ID: ${data['digitalId'] ?? 'Processing'}"),
-                trailing: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
-                  onPressed: () async {
-                    // পেমেন্ট কনফার্ম করার লজিক
-                    try {
-                      await _controller.makePayment(studentUid, 0); // ০ মানে ১ম কিস্তি
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Payment Approved Successfully!")),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Error: $e")),
-                      );
-                    }
-                  },
-                  child: const Text("Pay", style: TextStyle(color: Colors.white, fontSize: 12)),
-                ),
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    color: Colors.grey[100],
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("System Password: ${data['systemPassword'] ?? 'N/A'}",
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-                        Text("Email: ${data['email']}"),
-                        Text("Dept: ${data['department']}"),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            onPressed: () => _service.deleteOrRejectStudent(studentUid),
-                            icon: const Icon(Icons.person_remove, color: Colors.red, size: 18),
-                            label: const Text("Remove", style: TextStyle(color: Colors.red)),
-                          ),
-                        )
-                      ],
-                    ),
-                  )
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildPaymentTab() {
-    return const Center(child: Text("Payment History & Records Coming Soon..."));
   }
 }

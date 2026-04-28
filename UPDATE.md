@@ -286,6 +286,13 @@ git add .
 git commit -m "fix(nav): resolve logout navigation loop and improve admin dashboard structure" -m "- Updated logout logic to clear navigation stack. - Prepared Admin Dashboard with grid widgets. - Integrated AI assistant access for admin."
 git push origin dev
 
+git add .
+git commit -m "feat(admin): restructure admin dashboard into modular screens" -m "- Created AdminStudentListScreen and AdminPaymentApprovalScreen. - Fixed navigation loop and black screen issue using PopScope. - Integrated image-based AI analysis in AiBotScreen."
+git push origin dev
+
+
+
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

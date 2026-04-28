@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
-// সঠিক পাথ অনুযায়ী ইমপোর্ট
+// আপনার প্রজেক্ট স্ট্রাকচার অনুযায়ী সঠিক পাথ
 import 'digital_id_screen.dart';
 import '../../payment/student_payment_list_screen.dart';
 
@@ -24,7 +23,18 @@ class StudentDashboardScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => FirebaseAuth.instance.signOut().then((_) => Navigator.pushReplacementNamed(context, '/login')),
+            onPressed: () {
+              // স্টেজ ১: নেভিগেশন ফিক্স - লগআউট করলে সব হিস্টোরি ক্লিয়ার হবে
+              FirebaseAuth.instance.signOut().then((_) {
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context, 
+                    '/login', 
+                    (route) => false,
+                  );
+                }
+              });
+            },
           )
         ],
       ),
@@ -45,14 +55,20 @@ class StudentDashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ১. স্টুডেন্ট প্রোফাইল কার্ড (টপ সেকশন)
+                // ১. স্টুডেন্ট প্রোফাইল কার্ড
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF3949AB)]),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
+                    ),
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))
+                      BoxShadow(
+                        color: Colors.black12, 
+                        blurRadius: 10, 
+                        offset: Offset(0, 5),
+                      )
                     ],
                   ),
                   padding: const EdgeInsets.all(20),
@@ -61,16 +77,20 @@ class StudentDashboardScreen extends StatelessWidget {
                       const CircleAvatar(
                         radius: 40,
                         backgroundColor: Colors.white,
-                        child: Icon(Icons.person, size: 50, color: Color(0xFF1A237E))
+                        child: Icon(Icons.person, size: 50, color: Color(0xFF1A237E)),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         data['fullName'] ?? 'Student Name',
-                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)
+                        style: const TextStyle(
+                          color: Colors.white, 
+                          fontSize: 20, 
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         "ID: ${data['digitalId'] ?? 'ID Generating...'}",
-                        style: const TextStyle(color: Colors.white70)
+                        style: const TextStyle(color: Colors.white70),
                       ),
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 10),
@@ -81,7 +101,10 @@ class StudentDashboardScreen extends StatelessWidget {
                         children: [
                           const Icon(Icons.school, color: Colors.white70, size: 16),
                           const SizedBox(width: 5),
-                          Text(data['department'] ?? 'N/A', style: const TextStyle(color: Colors.white)),
+                          Text(
+                            data['department'] ?? 'N/A', 
+                            style: const TextStyle(color: Colors.white),
+                          ),
                         ],
                       ),
                     ],
@@ -89,7 +112,14 @@ class StudentDashboardScreen extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 25),
-                const Text("Quick Services", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                const Text(
+                  "Quick Services", 
+                  style: TextStyle(
+                    fontSize: 18, 
+                    fontWeight: FontWeight.bold, 
+                    color: Colors.black87,
+                  ),
+                ),
                 const SizedBox(height: 15),
 
                 // ২. গ্রিড মেনু
@@ -101,20 +131,21 @@ class StudentDashboardScreen extends StatelessWidget {
                   mainAxisSpacing: 12,
                   childAspectRatio: 1.1,
                   children: [
-                    // ডিজিটাল আইডি কার্ড বাটন
                     _buildFeatureCard(
                       Icons.badge_rounded,
                       "Digital ID",
                       Colors.blueAccent,
                       () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => DigitalIdScreen(studentId: uid!)),
-                        );
-                      }
+                        if (uid != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DigitalIdScreen(studentId: uid),
+                            ),
+                          );
+                        }
+                      },
                     ),
-                    
-                    // পেমেন্ট লিস্ট বাটন
                     _buildFeatureCard(
                       Icons.account_balance_wallet_rounded,
                       "Payments",
@@ -122,11 +153,12 @@ class StudentDashboardScreen extends StatelessWidget {
                       () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const StudentPaymentListScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const StudentPaymentListScreen(),
+                          ),
                         );
-                      }
+                      },
                     ),
-
                     _buildFeatureCard(Icons.quiz_rounded, "CT & Quiz", Colors.orange, () {}),
                     _buildFeatureCard(Icons.video_library_rounded, "Class Video", Colors.red, () {}),
                     _buildFeatureCard(Icons.event_note_rounded, "Routine", Colors.indigo, () {}),
@@ -167,7 +199,11 @@ class StudentDashboardScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)
+              style: const TextStyle(
+                fontWeight: FontWeight.bold, 
+                fontSize: 14, 
+                color: Colors.black87,
+              ),
             ),
           ],
         ),
