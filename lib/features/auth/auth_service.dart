@@ -38,16 +38,56 @@ class AuthService {
     }
   }
 
-  // লগইন লজিক
-  Future<User?> login({required String email, required String password}) async {
+  /// আপডেট করা লগইন লজিক
+  Future<String?> login(String identifier, String password) async {
     try {
-      UserCredential cred = await _auth.signInWithEmailAndPassword(
-        email: email.trim(), 
+      String emailToUse = identifier;
+      Map<String, dynamic>? userData;
+
+      // ১. ডিজিটাল আইডি থেকে ইমেইল এবং অন্যান্য তথ্য খুঁজে বের করা
+      if (!identifier.contains('@')) {
+        final querySnapshot = await _db
+            .collection('users')
+            .where('digitalId', isEqualTo: identifier.trim())
+            .limit(1)
+            .get();
+
+        if (querySnapshot.docs.isEmpty) {
+          return "ভুল ডিজিটাল আইডি! এই আইডি দিয়ে কোনো স্টুডেন্ট পাওয়া যায়নি।";
+        }
+        
+        userData = querySnapshot.docs.first.data();
+        emailToUse = userData['email'];
+      }
+
+      // ২. ফায়ারবেস অথ দিয়ে লগইন
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: emailToUse.trim(),
         password: password.trim(),
       );
-      return cred.user;
+
+      // ৩. নতুন চাহিদা অনুযায়ী ফায়ারবেস কনসোলের তথ্য আপডেট করা (অটোমেশন)
+      if (userCredential.user != null) {
+        // যদি ডিজিটাল আইডি দিয়ে লগইন না করে সরাসরি ইমেইল দিয়ে করে, তবে ডাটাবেজ থেকে তথ্য আবার নিতে হবে
+        if (userData == null) {
+          final doc = await _db.collection('users').doc(userCredential.user!.uid).get();
+          if (doc.exists) userData = doc.data() as Map<String, dynamic>;
+        }
+
+        if (userData != null) {
+          // ফায়ারবেস অথ প্রোফাইলে নাম (সাথে ডিজিটাল আইডি) সেট করা
+          await userCredential.user!.updateDisplayName("${userData['name']} (${userData['digitalId']})");
+        }
+      }
+
+      return null; // লগইন সফল
     } on FirebaseAuthException catch (e) {
-      throw Exception(e.message);
+      if (e.code == 'user-not-found') return "এই ইমেইলটি নিবন্ধিত নয়।";
+      if (e.code == 'wrong-password') return "ভুল পাসওয়ার্ড বা ফোন নাম্বার!";
+      if (e.code == 'invalid-email') return "ইমেইল বা ডিজিটাল আইডির ফরম্যাট সঠিক নয়।";
+      return "লগইন এরর: ${e.message}";
+    } catch (e) {
+      return e.toString();
     }
   }
 

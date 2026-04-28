@@ -23,8 +23,8 @@ dependencies:
   google_generative_ai: ^0.4.7
   mailer: ^6.6.0
   http: ^1.1.0
-  url_launcher: ^6.3.1  # এটি নতুন যুক্ত করা হয়েছে
-  font_awesome_flutter: ^10.7.0 # ফেসবুক আইকনের জন্য
+  url_launcher: ^6.3.1
+  font_awesome_flutter: ^10.7.0
 
 dev_dependencies:
   flutter_test:

@@ -179,21 +179,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: Column(
                       children: [
-                        TextField(
+                        TextFormField(
                           controller: _email,
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
-                            labelText: "Email Address",
-                            prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
+                            labelText: "Digital ID / Email Address",
+                            hintText: 'e.g. NUBTK-BBA-2026-0003',
+                            prefixIcon: Icon(Icons.person_outline, color: primaryColor),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                           ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'আপনার ডিজিটাল আইডি বা ইমেইল লিখুন';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 15),
                         TextField(
                           controller: _password,
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
-                            // আপনার চাহিদা অনুযায়ী এখানে পরিবর্তন করা হয়েছে
                             labelText: "Password (Your Digital ID)", 
                             prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
                             suffixIcon: IconButton(

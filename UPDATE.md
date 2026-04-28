@@ -262,5 +262,17 @@ git add .
 git commit -m "refactor: fix deprecated member use and clean up lint warnings"
 git push origin dev
 
+git add .
+Your security rules are defined as public, so anyone can steal, modify, or delete data in your database
+git push origin dev
+
+git add .
+git commit -m "feat: updated login logic with Digital ID support and auth service improvements"
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
+
+
+# শেষ "ভালো" অবস্থায় ফিরে যেতে পারেন। টার্মিনালে এই কমান্ডটি দিন:
+ git checkout .
