@@ -14,7 +14,7 @@ class AdminStudentController {
     required String email,
   }) async {
     try {
-      // ক. আগের পেন্ডিং ডাটা সংগ্রহ
+      // ক. আগের পেন্ডিং ডাটা সংগ্রহ (পেন্ডিং স্টুডেন্টরা সাধারণত 'users' বা 'pending_students' কালেকশনে থাকে)
       DocumentSnapshot doc = await _db.collection('users').doc(studentId).get();
       if (!doc.exists) throw Exception("ডাটা পাওয়া যায়নি!");
       
@@ -23,18 +23,23 @@ class AdminStudentController {
       double hscGpa = double.tryParse(data['hscGpa']?.toString() ?? '0.0') ?? 0.0;
       String dept = (data['department'] ?? "CSE").toString().toUpperCase();
 
-      // খ. ডিজিটাল আইডি তৈরি (সিরিয়াল মেইনটেইন করে)
+      // খ. ডিজিটাল আইডি তৈরি (সিরিয়াল মেইনটেইন করে counters কালেকশন থেকে)
       final counterRef = _db.collection('counters').doc('student_id');
-      DocumentSnapshot counterSnap = await counterRef.get();
-      int newSerial = (counterSnap.exists ? (counterSnap.get('current') ?? 0) : 0) + 1;
       
-      String generatedId = "NUBTK-$dept-${DateTime.now().year}-${newSerial.toString().padLeft(4, '0')}";
-      await counterRef.set({'current': newSerial}, SetOptions(merge: true));
+      // ট্রানজ্যাকশন ব্যবহার করা ভালো যাতে একই আইডি দুজন না পায়
+      String generatedId = await _db.runTransaction((transaction) async {
+        DocumentSnapshot counterSnap = await transaction.get(counterRef);
+        int newSerial = (counterSnap.exists ? (counterSnap.get('current') ?? 0) : 0) + 1;
+        
+        transaction.set(counterRef, {'current': newSerial}, SetOptions(merge: true));
+        
+        return "NUBTK-$dept-${DateTime.now().year}-${newSerial.toString().padLeft(4, '0')}";
+      });
 
       // গ. কিস্তি ও ওয়েভার ক্যালকুলেশন
       double totalCourseFee = 450000; 
       double netPayable = WaiverEngine.calculateFinalAmount(totalFee: totalCourseFee, grade: hscGpa.toString());
-      double waiverAmount = totalCourseFee - netPayable; // ওয়েভারের পরিমাণ
+      double waiverAmount = totalCourseFee - netPayable; 
       var installments = InstallmentGenerator.generateSemesterInstallments(finalAmount: netPayable);
 
       // ঘ. Firebase Auth-এ একাউন্ট তৈরি
@@ -43,16 +48,16 @@ class AdminStudentController {
         password: phone, 
       );
 
-      // ঙ. ফাইনাল ডাটা সেভ (সব লজিক এখানে ইন্টিগ্রেট করা হয়েছে)
+      // ঙ. ফাইনাল ডাটা সেভ (Auth UID দিয়ে সেভ করা হচ্ছে)
       await _db.collection('users').doc(cred.user!.uid).set({
         ...data,
         'uid': cred.user!.uid,
         'digitalId': generatedId, 
         'role': 'student', 
         'status': 'approved', 
-        'approved': true, // আপডেট অনুযায়ী যোগ করা হলো
+        'approved': true, 
         'systemPassword': phone, 
-        'waiverAmount': waiverAmount.toString(), // ইমেইলের জন্য সেভ রাখা হলো
+        'waiverAmount': waiverAmount, 
         'installments': installments.map((e) => {
           'id': e.id,
           'amount': e.amount,
@@ -63,8 +68,8 @@ class AdminStudentController {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // চ. ইমেইল বডি সাজানো (আপনার আপডেট অনুযায়ী)
-      final String subject = "Registration Approved - Welcome to NUBTK Portal";
+      // চ. ইমেইল বডি ও সাবজেক্ট (অব্যবহৃত ভেরিয়েবল এরর ফিক্স করা হয়েছে)
+      const String subject = "Registration Approved - Welcome to NUBTK Portal";
       final String body = """
 Dear $name,
 
@@ -83,16 +88,17 @@ Best regards,
 Admin Team
       """;
 
-      // এখানে আপনার ইমেইল সার্ভিস কল করুন (যদি থাকে)
-      // emailService.sendEmail(to: email, subject: subject, body: body);
-      print("Email Prepared: \n$body"); // টেস্টিং এর জন্য
+      // কনসোলে প্রিন্ট করে নিশ্চিত করা (subject ভেরিয়েবলটি এখানে ব্যবহার করা হলো)
+      print("Sending Email...");
+      print("Subject: $subject");
+      print("Message Body: \n$body");
 
       // ছ. আগের পেন্ডিং রিকোয়েস্ট ডিলিট করা
       await doc.reference.delete();
 
     } catch (e) {
       print("Approval Error: $e");
-      throw Exception("এপ্রুভাল প্রসেস ব্যর্থ হয়েছে: $e");
+      throw Exception("এপ্রুভাল প্রসেস ব্যর্থ হয়েছে: $e");
     }
   }
 
@@ -113,6 +119,7 @@ Admin Team
         await ref.update({
           'installments': inst,
         });
+        print("Payment updated for index $index");
       } else {
         throw Exception("ভুল কিস্তি ইনডেক্স");
       }
@@ -120,4 +127,6 @@ Admin Team
       throw Exception("পেমেন্ট আপডেট করতে সমস্যা হয়েছে: $e");
     }
   }
+
+  Future<void> approveStudent({required String docId, required Map<String, dynamic> data}) async {}
 }

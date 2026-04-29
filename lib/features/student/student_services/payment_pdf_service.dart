@@ -37,8 +37,8 @@ class PaymentPdfService {
                 pw.SizedBox(height: 20),
 
                 // স্টুডেন্ট ইনফরমেশন
-                pw.Text("Student Name: $name", style: pw.TextStyle(fontSize: 14)),
-                pw.Text("Digital ID: $digitalId", style: pw.TextStyle(fontSize: 14)),
+                pw.Text("Student Name: $name", style: const pw.TextStyle(fontSize: 14)),
+                pw.Text("Digital ID: $digitalId", style: const pw.TextStyle(fontSize: 14)),
                 pw.SizedBox(height: 10),
                 pw.Divider(color: PdfColors.grey),
                 pw.SizedBox(height: 10),

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// আপনার প্রজেক্ট স্ট্রাকচার অনুযায়ী সঠিক পাথ
+// সঠিক পাথ অনুযায়ী ইমপোর্ট নিশ্চিত করা হয়েছে
 import 'digital_id_screen.dart';
 import '../../payment/student_payment_list_screen.dart';
+import '../../ai_bot/ai_bot_screen.dart'; // AI বটের নতুন ইমপোর্ট
 
 class StudentDashboardScreen extends StatelessWidget {
   const StudentDashboardScreen({super.key});
@@ -24,12 +25,11 @@ class StudentDashboardScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              // স্টেজ ১: নেভিগেশন ফিক্স - লগআউট করলে সব হিস্টোরি ক্লিয়ার হবে
               FirebaseAuth.instance.signOut().then((_) {
                 if (context.mounted) {
                   Navigator.pushNamedAndRemoveUntil(
-                    context, 
-                    '/login', 
+                    context,
+                    '/login',
                     (route) => false,
                   );
                 }
@@ -39,13 +39,14 @@ class StudentDashboardScreen extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
+        // অ্যাডমিন প্যানেল অনুযায়ী 'users' কালেকশন থেকেই ডাটা আসবে
         stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data?.data() == null) {
-            return const Center(child: Text("No data found"));
+            return const Center(child: Text("No student data found"));
           }
 
           var data = snapshot.data!.data() as Map<String, dynamic>;
@@ -55,7 +56,7 @@ class StudentDashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ১. স্টুডেন্ট প্রোফাইল কার্ড
+                // ১. স্টুডেন্ট প্রোফাইল কার্ড (ডিজিটাল আইডি ও স্ট্যাটাসসহ)
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -65,8 +66,8 @@ class StudentDashboardScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: const [
                       BoxShadow(
-                        color: Colors.black12, 
-                        blurRadius: 10, 
+                        color: Colors.black12,
+                        blurRadius: 10,
                         offset: Offset(0, 5),
                       )
                     ],
@@ -83,14 +84,29 @@ class StudentDashboardScreen extends StatelessWidget {
                       Text(
                         data['fullName'] ?? 'Student Name',
                         style: const TextStyle(
-                          color: Colors.white, 
-                          fontSize: 20, 
+                          color: Colors.white,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 5),
+                      // ডিজিটাল আইডি প্রদর্শন
                       Text(
                         "ID: ${data['digitalId'] ?? 'ID Generating...'}",
-                        style: const TextStyle(color: Colors.white70),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                      ),
+                      // স্ট্যাটাস প্রদর্শন (Approved কি না)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: data['approved'] == true ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          data['approved'] == true ? "Status: Active" : "Status: Pending",
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                        ),
                       ),
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 10),
@@ -102,7 +118,7 @@ class StudentDashboardScreen extends StatelessWidget {
                           const Icon(Icons.school, color: Colors.white70, size: 16),
                           const SizedBox(width: 5),
                           Text(
-                            data['department'] ?? 'N/A', 
+                            data['department'] ?? 'Department N/A',
                             style: const TextStyle(color: Colors.white),
                           ),
                         ],
@@ -113,10 +129,10 @@ class StudentDashboardScreen extends StatelessWidget {
 
                 const SizedBox(height: 25),
                 const Text(
-                  "Quick Services", 
+                  "Quick Services",
                   style: TextStyle(
-                    fontSize: 18, 
-                    fontWeight: FontWeight.bold, 
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
                 ),
@@ -162,7 +178,19 @@ class StudentDashboardScreen extends StatelessWidget {
                     _buildFeatureCard(Icons.quiz_rounded, "CT & Quiz", Colors.orange, () {}),
                     _buildFeatureCard(Icons.video_library_rounded, "Class Video", Colors.red, () {}),
                     _buildFeatureCard(Icons.event_note_rounded, "Routine", Colors.indigo, () {}),
-                    _buildFeatureCard(Icons.auto_awesome_rounded, "AI Assistant", Colors.purple, () {}),
+                    
+                    // AI Assistant বাটন এখন সচল করা হয়েছে
+                    _buildFeatureCard(
+                      Icons.auto_awesome_rounded, 
+                      "AI Assistant", 
+                      Colors.purple, 
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AiBotScreen()),
+                        );
+                      }
+                    ),
                   ],
                 ),
               ],
@@ -200,8 +228,8 @@ class StudentDashboardScreen extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
-                fontWeight: FontWeight.bold, 
-                fontSize: 14, 
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
                 color: Colors.black87,
               ),
             ),

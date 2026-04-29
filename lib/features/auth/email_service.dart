@@ -6,11 +6,12 @@ class EmailService {
     required String recipientEmail,
     required String studentName,
     required String digitalId,
-    required String password, // এটি স্টুডেন্টের ফোন নম্বর হিসেবে পাস করা হচ্ছে
+    required String password, // এটি মূলত ফোন নম্বর
     required double totalFee,
     required double waiver,
     required double netPayable,
   }) async {
+    // আপনার জিমেইল অ্যাপ পাসওয়ার্ড এখানে ব্যবহার করা হয়েছে
     String username = 'alambashir257@gmail.com'; 
     String smtpPassword = 'frox izll aucc xujm'; 
 
@@ -31,7 +32,7 @@ class EmailService {
           
           <div style="background: #f0f2ff; padding: 20px; border-radius: 10px; border-left: 5px solid #1a237e; margin: 20px 0;">
             <p style="margin: 5px 0;"><strong>Digital ID:</strong> <span style="color: #1a237e; font-family: monospace; font-size: 16px;">$digitalId</span></p>
-            <p style="margin: 5px 0;"><strong>Login Password:</strong> <span style="color: #d32f2f;">Use your Mobile Number</span></p>
+            <p style="margin: 5px 0;"><strong>Login Password:</strong> <span style="color: #d32f2f;">$password (Your Mobile Number)</span></p>
           </div>
 
           <h3 style="color: #1a237e; border-bottom: 2px solid #f4f4f4; padding-bottom: 8px;">Financial Summary (Full Course)</h3>
@@ -64,6 +65,7 @@ class EmailService {
       print('Email sent successfully to $recipientEmail');
     } catch (e) {
       print('Mailer Error: $e');
+      rethrow; // এররটি হ্যান্ডেল করার জন্য রিথ্রো করা ভালো
     }
   }
 }

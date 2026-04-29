@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// সঠিক পাথ অনুযায়ী ইমপোর্ট নিশ্চিত করুন
-import '../home/home_screen.dart';
-import '../ai_bot/ai_bot_screen.dart';
-import 'admin_student_list_screen.dart'; // স্টুডেন্ট লিস্ট স্ক্রিন
+// সঠিক পাথ অনুযায়ী ইমপোর্ট নিশ্চিত করা হয়েছে
 import 'admin_payment_approval_screen.dart'; // পেমেন্ট এপ্রুভাল স্ক্রিন
+import 'admin_student_list_screen.dart';   // স্টুডেন্ট লিস্ট স্ক্রিন
+import '../ai_bot/ai_bot_screen.dart';     // AI বট স্ক্রিন
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -16,7 +15,7 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   
-  // লগআউট ফাংশন যা নেভিগেশন জট ক্লিয়ার করবে
+  // লগআউট ফাংশন যা নেভিগেশন স্ট্যাক ক্লিয়ার করবে
   void _logout() {
     FirebaseAuth.instance.signOut().then((_) {
       if (context.mounted) {
@@ -32,6 +31,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       appBar: AppBar(
         backgroundColor: Colors.indigo[900],
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Admin Control Center",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -47,7 +47,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // উপরের নীল অংশ (Header)
+            // উপরের হেডার অংশ
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
@@ -79,7 +79,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
             const SizedBox(height: 20),
 
-            // মেনু গ্রিড (Grid Menu)
+            // মেনু গ্রিড
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: GridView.count(
@@ -89,7 +89,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 crossAxisSpacing: 15,
                 mainAxisSpacing: 15,
                 children: [
-                  // ধাপ ১: স্টুডেন্ট লিস্ট নেভিগেশন আপডেট
+                  // ১. স্টুডেন্ট লিস্ট
                   _buildMenuCard(context, Icons.people, "Student List", Colors.blue, () {
                     Navigator.push(
                       context,
@@ -98,8 +98,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     );
                   }),
 
-                  // ধাপ ২: পেমেন্ট এপ্রুভাল নেভিগেশন আপডেট
-                  _buildMenuCard(context, Icons.payment, "Create Payment", Colors.green, () {
+                  // ২. পেমেন্ট এপ্রুভাল (এখানে আপনার এররটি ছিল যা এখন ফিক্সড)
+                  _buildMenuCard(context, Icons.payment, "Approve Payment", Colors.green, () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -107,14 +107,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     );
                   }),
 
+                  // ৩. কুইজ ও সিটি তৈরি
                   _buildMenuCard(context, Icons.quiz, "Create Quiz & CT", Colors.orange, () {
-                    // কুইজ পেজের কোড (ভবিষ্যত আপডেটের জন্য)
+                    // ভবিষ্যতে পেজ যুক্ত করার জন্য
                   }),
                   
+                  // ৪. গিফট ক্লাস
                   _buildMenuCard(context, Icons.video_library, "Gift Class", Colors.red, () {
-                    // ক্লাস গিফট করার পেজ
+                    // ভবিষ্যতে পেজ যুক্ত করার জন্য
                   }),
 
+                  // ৫. AI অ্যাসিস্ট্যান্ট
                   _buildMenuCard(context, Icons.auto_awesome, "AI Assistant", Colors.purple, () {
                     Navigator.push(
                       context,
@@ -122,8 +125,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     );
                   }),
 
+                  // ৬. তথ্য আপডেট
                   _buildMenuCard(context, Icons.update, "Update Info", Colors.teal, () {
-                    // আপডেট পেজ
+                    // ভবিষ্যতে পেজ যুক্ত করার জন্য
                   }),
                 ],
               ),
@@ -134,7 +138,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // মেনু কার্ড বানানোর উইজেট
+  // মেনু কার্ড উইজেট
   Widget _buildMenuCard(BuildContext context, IconData icon, String title,
       Color color, VoidCallback onTap) {
     return InkWell(
