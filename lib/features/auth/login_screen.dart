@@ -1,10 +1,10 @@
+// C:\projects\Flutter project\nubtk_pilot\lib\features\auth\login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_service.dart';
 import '../student/screens/student_dashboard_screen.dart';
 import '../admin/admin_screen.dart';
-// HomeScreen ইমপোর্ট নিশ্চিত করুন (আপনার প্রজেক্ট পাথ অনুযায়ী পরিবর্তন হতে পারে)
-import '../../features/home/home_screen.dart'; 
+import '../../features/home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,80 +28,79 @@ class _LoginScreenState extends State<LoginScreen> {
     final String passInput = _password.text.trim();
 
     if (emailInput.isEmpty || passInput.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter both email and password")),
-      );
+      _showError("Please enter both ID/Email and password");
       return;
     }
 
     setState(() => _loading = true);
 
     try {
-      // ১. স্পেশাল অ্যাডমিন লগইন
+      // ১. মাস্টার অ্যাডমিন লগইন (আপনার ডিফল্ট পাসওয়ার্ড)
       if (_isAdminMode && emailInput == "admin" && passInput == "admin@123") {
-        if (!mounted) return;
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const AdminDashboard()),
-          (route) => false,
-        );
+        _navigateTo(const AdminDashboard());
         return;
       }
 
-      // ২. ফায়ারবেস লগইন লজিক
+      // ২. ফায়ারবেস লগইন লজিক (স্টুডেন্ট এবং অন্যান্য অ্যাডমিনদের জন্য)
       String? loginResult = await _auth.login(emailInput, passInput);
 
       if (loginResult != null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loginResult)));
+        // যদি লগইন ব্যর্থ হয় (ভুল ইমেইল বা পাসওয়ার্ড)
+        _showError(loginResult);
       } else {
+        // লগইন সফল হলে রোল চেক করা
         User? user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           final role = await _auth.getRole(user.uid);
+          
           if (!mounted) return;
 
+          // রোল এবং মোড চেক
           if (role == 'student' && !_isAdminMode) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const StudentDashboardScreen()),
-              (route) => false,
-            );
+            _navigateTo(const StudentDashboardScreen());
           } else if (role == 'admin' && _isAdminMode) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminDashboard()),
-              (route) => false,
-            );
+            _navigateTo(const AdminDashboard());
           } else {
+            // যদি স্টুডেন্ট মোডে অ্যাডমিন লগইন করতে চায় বা উল্টোটা হয়
             await FirebaseAuth.instance.signOut();
-            throw Exception(
-                "Role mismatch! You are trying to log in as ${role.toUpperCase()} in ${_isAdminMode ? 'ADMIN' : 'STUDENT'} portal.");
+            _showError("Role mismatch! You are in ${_isAdminMode ? 'ADMIN' : 'STUDENT'} portal.");
           }
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
-        );
-      }
+      _showError(e.toString().replaceAll("Exception: ", ""));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  // স্ক্রিন নেভিগেশনের জন্য হেল্পার ফাংশন
+  void _navigateTo(Widget screen) {
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
+      (route) => false,
+    );
+  }
+
+  // এরর দেখানোর জন্য হেল্পার ফাংশন
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final Color primaryColor =
-        _isAdminMode ? Colors.red.shade800 : const Color(0xFF4F46E5);
+    final Color primaryColor = _isAdminMode ? Colors.red.shade800 : const Color(0xFF4F46E5);
 
-    // ধাপ ১: PopScope দিয়ে সম্পূর্ণ Scaffold র‍্যাপ করা হয়েছে
     return PopScope(
-      canPop: false, // ডিফল্ট ব্যাক অ্যাকশন বন্ধ
+      canPop: false, 
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        // ব্যাক বাটন চাপলে সরাসরি হোম স্ক্রিনে নিয়ে যাবে
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -115,7 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
             onPressed: () {
-              // অ্যাপবারের ব্যাক বাটনে চাপ দিলেও হোম স্ক্রিনে যাবে
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -140,9 +138,8 @@ class _LoginScreenState extends State<LoginScreen> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 25),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // মোড সুইচার বাটন
+                    // মোড সুইচার
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
@@ -159,46 +156,34 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: size.height * 0.03),
                     Icon(
-                      _isAdminMode
-                          ? Icons.admin_panel_settings_rounded
-                          : Icons.school_rounded,
+                      _isAdminMode ? Icons.admin_panel_settings_rounded : Icons.school_rounded,
                       size: 70,
                       color: Colors.white,
                     ),
                     const SizedBox(height: 10),
                     Text(
                       _isAdminMode ? "ADMIN PORTAL" : "STUDENT PORTAL",
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 25),
-                    // লগইন ফর্ম কার্ড
+                    
+                    // লগইন কার্ড
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(25),
                           boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            )
+                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))
                           ]),
                       child: Column(
                         children: [
                           TextFormField(
                             controller: _email,
-                            keyboardType: TextInputType.text,
                             decoration: InputDecoration(
-                              labelText: "Digital ID / Email Address",
-                              hintText: 'e.g. NUBTK-BBA-2026-0003',
-                              prefixIcon:
-                                  Icon(Icons.person_outline, color: primaryColor),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15)),
+                              labelText: _isAdminMode ? "Admin ID" : "Email Address",
+                              prefixIcon: Icon(Icons.person_outline, color: primaryColor),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                             ),
                           ),
                           const SizedBox(height: 15),
@@ -206,18 +191,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: _password,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
-                              labelText: "Password (Your Digital ID)",
-                              prefixIcon:
-                                  Icon(Icons.lock_outline, color: primaryColor),
+                              labelText: "Password",
+                              prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
                               suffixIcon: IconButton(
-                                icon: Icon(_obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility),
-                                onPressed: () => setState(() =>
-                                    _obscurePassword = !_obscurePassword),
+                                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                               ),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15)),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                             ),
                           ),
                           const SizedBox(height: 25),
@@ -230,14 +210,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     onPressed: _handleLogin,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: primaryColor,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(15)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                                     ),
-                                    child: const Text("LOGIN",
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold)),
+                                    child: const Text("LOGIN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                   ),
                                 ),
                         ],
@@ -268,10 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Text(
           title,
-          style: TextStyle(
-              color: isActive ? Colors.black : Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 13),
+          style: TextStyle(color: isActive ? Colors.black : Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );
