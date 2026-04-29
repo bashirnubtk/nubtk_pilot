@@ -28,7 +28,7 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
       body: Stack(
         children: [
           StreamBuilder<QuerySnapshot>(
-            // আপনার কন্ট্রোলারের লজিক অনুযায়ী 'students' কালেকশন ব্যবহার করা হয়েছে
+            // আপডেট অনুযায়ী: 'students' কালেকশন এবং 'pending' স্ট্যাটাস চেক করা হচ্ছে
             stream: FirebaseFirestore.instance
                 .collection('students')
                 .where('status', isEqualTo: 'pending') 
@@ -102,6 +102,7 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
             },
           ),
           
+          // প্রসেসিং চলার সময় লোডিং ইন্ডিকেটর
           if (_isProcessing)
             Container(
               color: Colors.black26,
@@ -112,12 +113,10 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
     );
   }
 
-  // এপ্রুভাল হ্যান্ডেলার সংশোধন করা হয়েছে
+  // এপ্রুভাল হ্যান্ডেলার (আপনার কন্ট্রোলারের approveStudent ফাংশনটি ব্যবহার করা হয়েছে)
   void _handleApprove(String docId, Map<String, dynamic> data) async {
     setState(() => _isProcessing = true);
     try {
-      // ফাংশনের নাম 'approveAndSendEmail' থেকে বদলে 'approveStudent' করা হয়েছে 
-      // যা আপনার বর্তমান কন্ট্রোলারের সাথে মিলবে
       await controller.approveStudent(
         docId: docId,
         data: data,
@@ -145,6 +144,7 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
     }
   }
 
+  // রিজেক্ট বা ডিলিট করার ডায়ালগ
   void _showRejectDialog(BuildContext context, String docId) {
     showDialog(
       context: context,
@@ -160,7 +160,7 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
               Navigator.pop(context);
               setState(() => _isProcessing = true);
               try {
-                // কন্ট্রোলারের কালেকশন অনুযায়ী 'students' ব্যবহার করা হয়েছে
+                // সরাসরি 'students' কালেকশন থেকে ডাটা ডিলিট করা হবে
                 await FirebaseFirestore.instance.collection('students').doc(docId).delete();
               } finally {
                 if (mounted) setState(() => _isProcessing = false);
