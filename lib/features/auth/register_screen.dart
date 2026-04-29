@@ -1,3 +1,4 @@
+// C:\projects\Flutter project\nubtk_pilot\lib\features\auth\register_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import '../home/languages/language_provider.dart';
 import 'waiting_approval_screen.dart';
+import 'auth_service.dart'; // AuthService ইম্পোর্ট করা হয়েছে
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -67,6 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // আপডেট করা _submit ফাংশন
   void _submit(String lang) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -78,37 +81,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      String tempId = _email.text.trim().replaceAll('.', '_');
-
-      await FirebaseFirestore.instance.collection('users').doc(tempId).set({
-        'id': tempId,
+      // AuthService এর মাধ্যমে রেজিস্ট্রেশন লজিক
+      final authService = AuthService();
+      
+      Map<String, dynamic> studentData = {
         'fullName': _name.text.trim(),
         'fatherName': _father.text.trim(),
         'motherName': _mother.text.trim(),
-        'email': _email.text.trim(),
         'phone': _phone.text.trim(),
-        'role': 'student',
         'department': _selectedDept ?? 'General',
         'sscGpa': double.tryParse(_ssc.text) ?? 0.0,
         'hscGpa': double.tryParse(_hsc.text) ?? 0.0,
-        'photoUrl': _photoPath, // Note: In production, upload file to Firebase Storage first
+        'photoUrl': _photoPath,
         'sscMarksheetPath': _sscPath,
         'hscMarksheetPath': _hscPath,
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      };
 
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const WaitingApprovalScreen()),
-        (route) => false,
+      // ফোন নম্বরটিকেই প্রাথমিক পাসওয়ার্ড হিসেবে ব্যবহার করা হচ্ছে
+      String? result = await authService.registerStudent(
+        email: _email.text.trim(),
+        password: _phone.text.trim(),
+        studentData: studentData,
       );
+
+      if (result == null) {
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const WaitingApprovalScreen()),
+          (route) => false,
+        );
+      } else {
+        _showError(result);
+      }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
       _showError("Submission Error: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -235,7 +244,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           if (_isLoading)
             Container(
-              color: Colors.black.withValues(alpha: 0.7),
+              color: Colors.black.withOpacity(0.7),
               child: const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -269,7 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(25),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 15, offset: const Offset(0, 8))
+              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 8))
             ],
           ),
           child: Column(children: children),
@@ -301,7 +310,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: DropdownButtonFormField<String>(
-        initialValue: _selectedDept,
+        value: _selectedDept,
         decoration: InputDecoration(
           labelText: 'Department',
           prefixIcon: Icon(Icons.business, color: Colors.indigo.shade300),
@@ -325,7 +334,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         decoration: BoxDecoration(
           border: Border.all(color: path.isEmpty ? Colors.grey.shade300 : Colors.green),
           borderRadius: BorderRadius.circular(15),
-          color: path.isEmpty ? Colors.transparent : Colors.green.withValues(alpha: 0.1),
+          color: path.isEmpty ? Colors.transparent : Colors.green.withOpacity(0.1),
         ),
         child: Row(
           children: [

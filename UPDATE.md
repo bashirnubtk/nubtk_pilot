@@ -313,6 +313,12 @@ git add .
 git commit -m "feat: integrate student approval logic with status pending and email service"
 git push origin dev
 
+
+git add .
+git commit -m "feat: integrate Firebase Auth with student registration and admin approval flow"
+git push origin dev
+
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

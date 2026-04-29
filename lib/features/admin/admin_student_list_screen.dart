@@ -28,7 +28,7 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
       body: Stack(
         children: [
           StreamBuilder<QuerySnapshot>(
-            // আপডেট অনুযায়ী: 'students' কালেকশন এবং 'pending' স্ট্যাটাস চেক করা হচ্ছে
+            // এখানে সঠিকভাবে 'students' কালেকশন এবং 'pending' ফিল্টার ব্যবহার করা হয়েছে
             stream: FirebaseFirestore.instance
                 .collection('students')
                 .where('status', isEqualTo: 'pending') 
@@ -102,7 +102,6 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
             },
           ),
           
-          // প্রসেসিং চলার সময় লোডিং ইন্ডিকেটর
           if (_isProcessing)
             Container(
               color: Colors.black26,
@@ -113,7 +112,6 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
     );
   }
 
-  // এপ্রুভাল হ্যান্ডেলার (আপনার কন্ট্রোলারের approveStudent ফাংশনটি ব্যবহার করা হয়েছে)
   void _handleApprove(String docId, Map<String, dynamic> data) async {
     setState(() => _isProcessing = true);
     try {
@@ -144,7 +142,6 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
     }
   }
 
-  // রিজেক্ট বা ডিলিট করার ডায়ালগ
   void _showRejectDialog(BuildContext context, String docId) {
     showDialog(
       context: context,
@@ -160,7 +157,6 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
               Navigator.pop(context);
               setState(() => _isProcessing = true);
               try {
-                // সরাসরি 'students' কালেকশন থেকে ডাটা ডিলিট করা হবে
                 await FirebaseFirestore.instance.collection('students').doc(docId).delete();
               } finally {
                 if (mounted) setState(() => _isProcessing = false);
