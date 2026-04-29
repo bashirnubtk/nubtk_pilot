@@ -1,12 +1,10 @@
-// ai_bot_screen.dart
-
-import 'dart:typed_data'; // ছবির ডাটার জন্য
+//C:\projects\Flutter project\nubtk_pilot\lib\features\ai_bot\ai_bot_screen.dart
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // ইমেজ পিকার
-import 'package:provider/provider.dart';
-import 'package:nubtk_pilot/features/home/languages/language_provider.dart';
-import 'package:nubtk_pilot/features/ai_bot/finance_ai_handler.dart';
-import '../../core/constants/app_strings.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'ai_logic_center.dart';
 
 class AiBotScreen extends StatefulWidget {
   const AiBotScreen({super.key});
@@ -17,173 +15,125 @@ class AiBotScreen extends StatefulWidget {
 
 class _AiBotScreenState extends State<AiBotScreen> {
   final TextEditingController _controller = TextEditingController();
-  final ImagePicker _picker = ImagePicker(); // ইমেজ পিকার অবজেক্ট
   final List<Map<String, dynamic>> _messages = [];
   bool _isLoading = false;
-  Uint8List? _selectedImageBytes; // সিলেক্ট করা ছবির ডাটা
+  final ImagePicker _picker = ImagePicker();
+  Uint8List? _selectedImageBytes;
 
-  // ছবি সিলেক্ট করার ফাংশন
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       final bytes = await image.readAsBytes();
-      setState(() {
-        _selectedImageBytes = bytes;
-        // ছবি সিলেক্ট হলেই চ্যাটে দেখাব (লোকালি)
-        _messages.add({"text": "[Image Attached]", "isUser": true, "image": bytes});
-      });
-      // ছবি সিলেক্ট হওয়ার পর অটোমেটিক AI-তে পাঠাব
+      setState(() => _selectedImageBytes = bytes);
       _handleSend(fromImage: true);
     }
   }
 
-  // মেসেজ বা ছবি পাঠানোর ফাংশন (আপডেট করা হয়েছে)
   Future<void> _handleSend({bool fromImage = false}) async {
     String text = _controller.text.trim();
-    
-    // ছবি বা টেক্সট—যেকোনো একটা অবশ্যই থাকতে হবে
     if (text.isEmpty && _selectedImageBytes == null) return;
 
-    if (!fromImage && text.isNotEmpty) {
-       setState(() {
-        _messages.add({"text": text, "isUser": true});
-        _isLoading = true;
+    setState(() {
+      _messages.add({
+        "text": fromImage ? "[ছবি বিশ্লেষণ করা হচ্ছে...]" : text,
+        "isUser": true,
+        "image": _selectedImageBytes
       });
-    } else if (fromImage) {
-      // যদি শুধু ছবি হয়, চ্যাট বাবল অলরেডি _pickImage-এ অ্যাড হয়েছে
-       setState(() {
-        _isLoading = true;
-      });
-    }
-    
-    _controller.clear();
+      _isLoading = true;
+    });
 
     try {
-      // FinanceAIHandler-কে টেক্সট এবং ছবি দুটোই দিচ্ছি
-      final result = await FinanceAIHandler.analyzeInput(
+      final user = FirebaseAuth.instance.currentUser;
+      Map<String, dynamic>? studentData;
+      if (user != null) {
+        var snap = await FirebaseFirestore.instance.collection('students').doc(user.uid).get();
+        studentData = snap.data();
+      }
+
+      final response = await AILogicCenter.analyzeInput(
         textInput: text.isNotEmpty ? text : null,
         imageBytes: _selectedImageBytes,
+        studentData: studentData,
       );
-      
+
       setState(() {
         _messages.add({
-          "text": "${result['reply']}\n\n💡 Tip: ${result['suggestion']}",
-          "isUser": false
+          "text": response['reply'],
+          "suggestion": response['suggestion'],
+          "isUser": false,
+          "image": null
         });
-        _selectedImageBytes = null; // ছবি পাঠানো শেষ, তাই নাল করে দিই
-      });
-    } catch (e) {
-      setState(() {
-        _messages.add({"text": "এরর: AI-এর সাথে সংযোগ বিচ্ছিন্ন হয়েছে।", "isUser": false});
         _selectedImageBytes = null;
       });
+    } catch (e) {
+      setState(() => _messages.add({"text": "এআই সাড়া দিচ্ছে না।", "isUser": false}));
     } finally {
       setState(() => _isLoading = false);
+      _controller.clear();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final lang = Provider.of<LanguageProvider>(context).languageCode;
-
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(AppStrings.askAIBot[lang] ?? "NUBTK AI", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Colors.indigo[900],
-        elevation: 1,
-      ),
+      appBar: AppBar(title: const Text("NUBTK Pilot AI"), centerTitle: true),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(10),
               itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                return _buildChatBubble(msg);
-              },
+              itemBuilder: (context, index) => _buildChatBubble(_messages[index]),
             ),
           ),
           if (_isLoading) const LinearProgressIndicator(),
-          _buildInputArea(lang),
+          _buildInputBar(),
         ],
       ),
     );
   }
 
-  // চ্যাট বাবল আপডেট (ছবি সাপোর্ট করার জন্য)
   Widget _buildChatBubble(Map<String, dynamic> msg) {
-    bool isUser = msg["isUser"];
-    Uint8List? imageBytes = msg["image"];
-
+    bool isUser = msg['isUser'] ?? false;
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.symmetric(vertical: 5),
+        padding: const EdgeInsets.all(12),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: isUser ? Colors.indigo : Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
+          color: isUser ? Colors.blue[100] : Colors.grey[200],
+          borderRadius: BorderRadius.circular(15),
         ),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (imageBytes != null) // যদি ছবি থাকে, তবে দেখাব
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.memory(imageBytes, fit: BoxFit.cover, height: 150),
-                ),
-              ),
-            Text(
-              msg["text"],
-              style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 16),
-            ),
+            if (msg['image'] != null) Image.memory(msg['image'], height: 150),
+            Text(msg['text'] ?? "", style: const TextStyle(fontSize: 15)),
+            if (msg['suggestion'] != null)
+              Text("\n💡 ${msg['suggestion']}", 
+                style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.blueGrey)),
           ],
         ),
       ),
     );
   }
 
-  // ইনপুট এরিয়া আপডেট (ছবির বাটন যোগ করা হয়েছে)
-  Widget _buildInputArea(String lang) {
+  Widget _buildInputBar() {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey[300]!, width: 1)),
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            // ছবির বাটন (গ্যালারি)
-            IconButton(
-              icon: const Icon(Icons.image_outlined, color: Colors.indigo, size: 28),
-              onPressed: _isLoading ? null : _pickImage,
+      padding: const EdgeInsets.all(8),
+      decoration: const BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)]),
+      child: Row(
+        children: [
+          IconButton(icon: const Icon(Icons.image, color: Colors.blue), onPressed: _pickImage),
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              decoration: const InputDecoration(hintText: "প্রশ্ন লিখুন...", border: InputBorder.none),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                style: const TextStyle(color: Colors.black, fontSize: 16),
-                decoration: InputDecoration(
-                  hintText: lang == 'bn' ? 'এখানে লিখুন...' : 'Type here...',
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.send_rounded, color: Colors.indigo, size: 28),
-              onPressed: _isLoading ? null : () => _handleSend(fromImage: false),
-            ),
-          ],
-        ),
+          ),
+          IconButton(icon: const Icon(Icons.send, color: Colors.blue), onPressed: () => _handleSend()),
+        ],
       ),
     );
   }

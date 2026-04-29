@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// সঠিক পাথ: এক ধাপ পেছনে গিয়ে পেমেন্ট সার্ভিস এবং পাশের টাইল ফাইলটি নেওয়া
-import '../student/screens/payment_tile.dart'; 
-import 'payment_service.dart'; 
+// আপনার বিদ্যমান ইমপোর্টগুলো
+import '../student/screens/payment_tile.dart';
+import 'payment_service.dart';
 
 class StudentPaymentListScreen extends StatelessWidget {
   const StudentPaymentListScreen({super.key});
@@ -20,13 +20,22 @@ class StudentPaymentListScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+        // লজিক আপডেট: অ্যাডমিন যেহেতু 'students' কালেকশনে ডাটা সেভ করছে, তাই এখান থেকেই রিড করতে হবে
+        stream: FirebaseFirestore.instance.collection('students').doc(uid).snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
           
-          var data = snapshot.data!.data() as Map<String, dynamic>?;
-          if (data == null || !data.containsKey('installments')) {
+          if (!snapshot.hasData || snapshot.data?.data() == null) {
             return const Center(child: Text("No installment plan found."));
+          }
+
+          var data = snapshot.data!.data() as Map<String, dynamic>;
+          
+          // কিস্তি ডাটা চেক করা
+          if (!data.containsKey('installments')) {
+            return const Center(child: Text("No installment records."));
           }
 
           var installments = data['installments'] as List;
@@ -36,23 +45,28 @@ class StudentPaymentListScreen extends StatelessWidget {
             itemCount: installments.length,
             itemBuilder: (context, index) {
               var inst = installments[index];
+              
               return PaymentTile(
                 paymentData: {
-                  'status': inst['isPaid'] ? 'Paid' : 'Due',
+                  'status': inst['isPaid'] == true ? 'Paid' : 'Due',
                   'percentage': '${inst['amount']} TK',
                   'month': 'Semester ${inst['semester']}',
                   'semester': inst['semester'],
                   'amount': inst['amount'],
-                  'name': data['fullName'],
-                  'digitalId': data['digitalId'],
+                  'name': data['fullName'] ?? 'Student',
+                  'digitalId': data['studentId'] ?? data['digitalId'] ?? 'N/A',
                 },
-                onPay: () async {
-                  await PaymentService.markInstallmentPaid(inst['id']);
-                  if (context.mounted) {
+                // এরর ফিক্স: ফাংশনটিকে সরাসরি এভাবে লিখলে 'VoidCallback' এর সমস্যা হবে না
+                onPay: () {
+                  if (inst['isPaid'] == true) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Payment Successful!")),
+                      const SnackBar(content: Text("Already Paid!")),
                     );
+                    return;
                   }
+                  
+                  // পেমেন্ট প্রসেস শুরু
+                  _handlePayment(context, inst['id']);
                 },
               );
             },
@@ -60,5 +74,25 @@ class StudentPaymentListScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  // পেমেন্ট লজিক আলাদা ফাংশন হিসেবে (যাতে এরর না আসে)
+  Future<void> _handlePayment(BuildContext context, String installmentId) async {
+    try {
+      // আপনার বিদ্যমান সার্ভিস কল
+      await PaymentService.markInstallmentPaid(installmentId);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Payment Successful!"), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 }
