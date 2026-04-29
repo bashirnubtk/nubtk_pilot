@@ -1,32 +1,29 @@
+// C:\projects\Flutter project\nubtk_pilot\lib\features\admin\admin_student_controller.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../payment/waiver_engine.dart';
 import '../payment/installment_generator.dart';
+import '../auth/email_service.dart'; // ইমেইল সার্ভিস ইমপোর্ট করা হয়েছে
 
 class AdminStudentController {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // ১. স্টুডেন্ট এপ্রুভাল লজিক (ইন্টিগ্রেটেড ভার্সন)
-  Future<void> approveAndSendEmail({
-    required String studentId,
-    required String name,
-    required String email,
+  // ১. স্টুডেন্ট এপ্রুভাল লজিক (স্ক্রিন ফাইলের সাথে সামঞ্জস্য রেখে নাম পরিবর্তন করা হয়েছে)
+  Future<void> approveStudent({
+    required String docId,
+    required Map<String, dynamic> data,
   }) async {
     try {
-      // ক. আগের পেন্ডিং ডাটা সংগ্রহ (পেন্ডিং স্টুডেন্টরা সাধারণত 'users' বা 'pending_students' কালেকশনে থাকে)
-      DocumentSnapshot doc = await _db.collection('users').doc(studentId).get();
-      if (!doc.exists) throw Exception("ডাটা পাওয়া যায়নি!");
-      
-      var data = doc.data() as Map<String, dynamic>;
-      String phone = data['phone']?.toString().trim() ?? '12345678'; 
+      // ক. ডাটা থেকে প্রয়োজনীয় তথ্য সংগ্রহ
+      String name = data['fullName'] ?? 'Unknown Student';
+      String email = data['email']?.toString().trim() ?? '';
+      String phone = data['phone']?.toString().trim() ?? '12345678';
       double hscGpa = double.tryParse(data['hscGpa']?.toString() ?? '0.0') ?? 0.0;
       String dept = (data['department'] ?? "CSE").toString().toUpperCase();
 
-      // খ. ডিজিটাল আইডি তৈরি (সিরিয়াল মেইনটেইন করে counters কালেকশন থেকে)
+      if (email.isEmpty) throw Exception("স্টুডেন্টের ইমেইল পাওয়া যায়নি!");
+
+      // খ. ডিজিটাল আইডি জেনারেশন (ট্রানজ্যাকশন ব্যবহার করে যাতে আইডি ডুপ্লিকেট না হয়)
       final counterRef = _db.collection('counters').doc('student_id');
-      
-      // ট্রানজ্যাকশন ব্যবহার করা ভালো যাতে একই আইডি দুজন না পায়
       String generatedId = await _db.runTransaction((transaction) async {
         DocumentSnapshot counterSnap = await transaction.get(counterRef);
         int newSerial = (counterSnap.exists ? (counterSnap.get('current') ?? 0) : 0) + 1;
@@ -36,97 +33,78 @@ class AdminStudentController {
         return "NUBTK-$dept-${DateTime.now().year}-${newSerial.toString().padLeft(4, '0')}";
       });
 
-      // গ. কিস্তি ও ওয়েভার ক্যালকুলেশন
-      double totalCourseFee = 450000; 
+      // গ. কিস্তি ও ওয়েভার ক্যালকুলেশন
+      double totalCourseFee = 450000;
       double netPayable = WaiverEngine.calculateFinalAmount(totalFee: totalCourseFee, grade: hscGpa.toString());
-      double waiverAmount = totalCourseFee - netPayable; 
+      double waiverAmount = totalCourseFee - netPayable;
+      
+      // কিস্তি জেনারেট করা
       var installments = InstallmentGenerator.generateSemesterInstallments(finalAmount: netPayable);
 
-      // ঘ. Firebase Auth-এ একাউন্ট তৈরি
-      UserCredential cred = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: phone, 
-      );
-
-      // ঙ. ফাইনাল ডাটা সেভ (Auth UID দিয়ে সেভ করা হচ্ছে)
-      await _db.collection('users').doc(cred.user!.uid).set({
-        ...data,
-        'uid': cred.user!.uid,
-        'digitalId': generatedId, 
-        'role': 'student', 
+      // ঘ. ডাটা আপডেট করা (যেহেতু আপনার স্ক্রিন 'students' কালেকশন থেকে ডাটা পড়ছে, তাই সেখানেই আপডেট হবে)
+      await _db.collection('students').doc(docId).update({
+        'digitalId': generatedId,
         'status': 'approved', 
-        'approved': true, 
-        'systemPassword': phone, 
-        'waiverAmount': waiverAmount, 
+        'role': 'student', 
+        'approved': true,
+        'waiverAmount': waiverAmount,
+        'netPayable': netPayable,
+        'systemPassword': phone, // প্রাথমিক পাসওয়ার্ড হিসেবে ফোন নাম্বার
         'installments': installments.map((e) => {
           'id': e.id,
           'amount': e.amount,
-          'dueDate': e.dueDate.toIso8601String(), 
+          'dueDate': e.dueDate.toIso8601String(),
           'isPaid': false,
           'semester': e.semester
         }).toList(),
-        'createdAt': FieldValue.serverTimestamp(),
+        'approvalDate': FieldValue.serverTimestamp(),
       });
 
-      // চ. ইমেইল বডি ও সাবজেক্ট (অব্যবহৃত ভেরিয়েবল এরর ফিক্স করা হয়েছে)
-      const String subject = "Registration Approved - Welcome to NUBTK Portal";
-      final String body = """
-Dear $name,
+      // ঙ. জিমেইল পাঠানো
+      await EmailService.sendApprovalEmail(
+        recipientEmail: email,
+        studentName: name,
+        digitalId: generatedId,
+        password: phone,
+        totalFee: totalCourseFee,
+        waiver: waiverAmount,
+        netPayable: netPayable,
+      );
 
-Your registration has been approved by the Admin. You can now login to your portal.
-
-Login Details:
-Email: $email
-Password: $phone (Your mobile number)
-Digital ID: $generatedId
-
-Financial Info:
-Waiver Amount: $waiverAmount BDT
-
-Please keep your credentials secure.
-Best regards,
-Admin Team
-      """;
-
-      // কনসোলে প্রিন্ট করে নিশ্চিত করা (subject ভেরিয়েবলটি এখানে ব্যবহার করা হলো)
-      print("Sending Email...");
-      print("Subject: $subject");
-      print("Message Body: \n$body");
-
-      // ছ. আগের পেন্ডিং রিকোয়েস্ট ডিলিট করা
-      await doc.reference.delete();
+      print("Process Successfully Completed for: $email | ID: $generatedId");
 
     } catch (e) {
       print("Approval Error: $e");
-      throw Exception("এপ্রুভাল প্রসেস ব্যর্থ হয়েছে: $e");
+      throw Exception("এপ্রুভাল প্রসেস ব্যর্থ হয়েছে: $e");
     }
   }
 
-  // ২. এডমিন পেমেন্ট কনফার্মেশন ফাংশন
+  // ২. পেমেন্ট কনফার্মেশন ফাংশন
   Future<void> makePayment(String studentUid, int index) async {
     try {
-      DocumentReference ref = _db.collection('users').doc(studentUid);
+      DocumentReference ref = _db.collection('students').doc(studentUid);
       DocumentSnapshot snap = await ref.get();
-      
-      if (!snap.exists) throw Exception("স্টুডেন্ট খুঁজে পাওয়া যায়নি");
+     
+      if (!snap.exists) throw Exception("স্টুডেন্ট খুঁজে পাওয়া যায়নি");
 
       List inst = List.from(snap.get('installments'));
-      
+     
       if (index >= 0 && index < inst.length) {
         inst[index]['isPaid'] = true;
-        inst[index]['paymentDate'] = DateTime.now().toIso8601String(); 
-        
+        inst[index]['paymentDate'] = DateTime.now().toIso8601String();
+        inst[index]['status'] = 'Paid';
+       
         await ref.update({
           'installments': inst,
         });
-        print("Payment updated for index $index");
       } else {
         throw Exception("ভুল কিস্তি ইনডেক্স");
       }
     } catch (e) {
-      throw Exception("পেমেন্ট আপডেট করতে সমস্যা হয়েছে: $e");
+      print("Payment Error: $e");
+      throw Exception("পেমেন্ট আপডেট করতে সমস্যা হয়েছে: $e");
     }
   }
 
-  Future<void> approveStudent({required String docId, required Map<String, dynamic> data}) async {}
+  Future<void> approveAndSendEmail({required String studentId, required String name, required String email}) async {}
 }

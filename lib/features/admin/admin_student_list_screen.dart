@@ -1,3 +1,4 @@
+// C:\projects\Flutter project\nubtk_pilot\lib\features\admin\admin_student_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_student_controller.dart';
@@ -11,7 +12,7 @@ class AdminStudentListScreen extends StatefulWidget {
 
 class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
   final AdminStudentController controller = AdminStudentController();
-  bool _isProcessing = false; // লোডিং স্টেট হ্যান্ডেল করার জন্য
+  bool _isProcessing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -22,92 +23,121 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
         backgroundColor: Colors.indigo[900],
         foregroundColor: Colors.white,
         centerTitle: true,
+        elevation: 0,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        // লজিক অনুযায়ী যারা এখনো এপ্রুভ হয়নি (রোল পেন্ডিং) তাদের কুয়েরি করা হচ্ছে
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .where('role', isEqualTo: 'pending')
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text("No pending requests found.", style: TextStyle(color: Colors.grey)),
-            );
-          }
-
-          var docs = snapshot.data!.docs;
-
-          return ListView.builder(
-            itemCount: docs.length,
-            padding: const EdgeInsets.all(12),
-            itemBuilder: (context, index) {
-              var data = docs[index].data() as Map<String, dynamic>;
-              String docId = docs[index].id;
+      body: Stack(
+        children: [
+          StreamBuilder<QuerySnapshot>(
+            // আপনার কন্ট্রোলারের লজিক অনুযায়ী 'students' কালেকশন ব্যবহার করা হয়েছে
+            stream: FirebaseFirestore.instance
+                .collection('students')
+                .where('status', isEqualTo: 'pending') 
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
               
-              return Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  title: Text(
-                    data['fullName'] ?? 'No Name',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 4),
-                      Text("Email: ${data['email'] ?? 'N/A'}"),
-                      Text("Phone: ${data['phone'] ?? 'N/A'}"),
-                      Text("HSC GPA: ${data['hscGpa'] ?? '0.0'}", style: const TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.w600)),
+                      Icon(Icons.person_off, size: 60, color: Colors.grey),
+                      SizedBox(height: 10),
+                      Text("No pending requests found.", style: TextStyle(color: Colors.grey)),
                     ],
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // এপ্রুভ বাটন
-                      IconButton(
-                        icon: const Icon(Icons.check_circle, color: Colors.green, size: 30),
-                        onPressed: _isProcessing ? null : () => _handleApprove(docId, data),
+                );
+              }
+
+              var docs = snapshot.data!.docs;
+
+              return ListView.builder(
+                itemCount: docs.length,
+                padding: const EdgeInsets.all(12),
+                itemBuilder: (context, index) {
+                  var data = docs[index].data() as Map<String, dynamic>;
+                  String docId = docs[index].id;
+                 
+                  return Card(
+                    elevation: 3,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      title: Text(
+                        data['fullName'] ?? 'No Name',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      // রিজেক্ট বাটন
-                      IconButton(
-                        icon: const Icon(Icons.cancel, color: Colors.red, size: 30),
-                        onPressed: _isProcessing ? null : () => _showRejectDialog(context, docId),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text("Email: ${data['email'] ?? 'N/A'}"),
+                          Text("Phone: ${data['phone'] ?? 'N/A'}"),
+                          Text(
+                            "HSC GPA: ${data['hscGpa'] ?? '0.0'}", 
+                            style: TextStyle(color: Colors.indigo[700], fontWeight: FontWeight.w600)
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                            onPressed: _isProcessing ? null : () => _handleApprove(docId, data),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.cancel, color: Colors.red, size: 32),
+                            onPressed: _isProcessing ? null : () => _showRejectDialog(context, docId),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+          
+          if (_isProcessing)
+            Container(
+              color: Colors.black26,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+        ],
       ),
     );
   }
 
-  // এপ্রুভাল হ্যান্ডেলার
+  // এপ্রুভাল হ্যান্ডেলার সংশোধন করা হয়েছে
   void _handleApprove(String docId, Map<String, dynamic> data) async {
     setState(() => _isProcessing = true);
     try {
-      await controller.approveAndSendEmail(
-        studentId: docId,
-        name: data['fullName'] ?? 'User',
-        email: data['email'] ?? '',
+      // ফাংশনের নাম 'approveAndSendEmail' থেকে বদলে 'approveStudent' করা হয়েছে 
+      // যা আপনার বর্তমান কন্ট্রোলারের সাথে মিলবে
+      await controller.approveStudent(
+        docId: docId,
+        data: data,
       );
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Student Approved & Credentials Generated!")),
+          const SnackBar(
+            content: Text("Success: Student Approved & Email Sent!"),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(
+            content: Text("Process Failed: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -115,21 +145,28 @@ class _AdminStudentListScreenState extends State<AdminStudentListScreen> {
     }
   }
 
-  // রিজেক্ট কনফার্মেশন ডায়ালগ
   void _showRejectDialog(BuildContext context, String docId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Reject Student?"),
-        content: const Text("Are you sure you want to delete this request permanently?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Text("Reject Request?"),
+        content: const Text("This will permanently delete the admission request."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-          TextButton(
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Go Back")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               Navigator.pop(context);
-              await FirebaseFirestore.instance.collection('users').doc(docId).delete();
+              setState(() => _isProcessing = true);
+              try {
+                // কন্ট্রোলারের কালেকশন অনুযায়ী 'students' ব্যবহার করা হয়েছে
+                await FirebaseFirestore.instance.collection('students').doc(docId).delete();
+              } finally {
+                if (mounted) setState(() => _isProcessing = false);
+              }
             },
-            child: const Text("Reject", style: TextStyle(color: Colors.red)),
+            child: const Text("Reject Now", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
