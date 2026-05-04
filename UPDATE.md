@@ -246,6 +246,11 @@ git add .
 git commit -m "AI bot UI improved and SMTP email service added"
 git push origin dev
 
+
+git add .
+git commit -m "updates note"
+git push origin dev
+
 git add .
 git commit -m "Refactor AdminDataService to use 'users' collection and add role-based filtering"
 git push origin dev
