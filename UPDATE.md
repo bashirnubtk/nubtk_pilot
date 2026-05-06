@@ -335,7 +335,7 @@ git push origin dev
 
 git add .
 git commit -m "Payment and PDF receipt issue fixed"
-git push origin main
+git push origin dev
 
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
