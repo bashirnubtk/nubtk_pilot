@@ -1,30 +1,32 @@
 // D:\projects\nubtk_pilot\lib\features\student\screens\payment_tile.dart
 
 import 'package:flutter/material.dart';
+// আপনার প্রজেক্টের ফোল্ডার স্ট্রাকচার অনুযায়ী সঠিক পাথটি ব্যবহার করুন
 import '../student_services/payment_pdf_service.dart';
 
 class PaymentTile extends StatelessWidget {
+  final Map<String, dynamic> studentData;
   final Map<String, dynamic> paymentData;
   final VoidCallback onPay;
-  final Map<String, dynamic>? studentData;
 
   const PaymentTile({
     super.key,
+    required this.studentData,
     required this.paymentData,
     required this.onPay,
-    this.studentData,
   });
 
   @override
   Widget build(BuildContext context) {
-    // ডাটাবেজ থেকে আসা স্ট্যাটাস চেক
+    // পেমেন্ট স্ট্যাটাস চেক
     bool isPaid = paymentData['status'] == 'Paid';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: 2,
       child: Opacity(
-        // পেইড হলে কার্ডের অপাসিটি কিছুটা কমিয়ে দেওয়া হয়েছে
+        // পেইড হলে কার্ডের অপাসিটি কিছুটা কমিয়ে দেওয়া হয়েছে (০.৮)
         opacity: isPaid ? 0.8 : 1.0,
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(
@@ -41,7 +43,8 @@ class PaymentTile extends StatelessWidget {
             ),
           ),
           title: Text(
-            paymentData['title'] ?? "Tuition Fee",
+            // এখানে 'month' কি-টি ব্যবহার করা হয়েছে যা 'Semester X (Session Y)' দেখাবে
+            paymentData['month'] ?? paymentData['title'] ?? "Tuition Fee",
             style: TextStyle(
               fontWeight: FontWeight.bold,
               decoration: isPaid ? TextDecoration.lineThrough : null,
@@ -53,10 +56,10 @@ class PaymentTile extends StatelessWidget {
                   onPressed: () {
                     // পিডিএফ রিসিট জেনারেশন সার্ভিস কল
                     PaymentPdfService.generateReceipt(
-                      name: studentData?['fullName'] ?? "Student",
-                      digitalId: studentData?['studentId'] ?? "N/A",
-                      month: paymentData['title'] ?? "N/A",
-                      percentage: paymentData['amount'] ?? "0",
+                      name: studentData['fullName'] ?? "Student",
+                      digitalId: studentData['studentId'] ?? "N/A",
+                      month: paymentData['month'] ?? "N/A",
+                      percentage: paymentData['amount']?.toString() ?? "0",
                       date: DateTime.now().toString().split(' ')[0],
                     );
                   },
@@ -65,6 +68,9 @@ class PaymentTile extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green[700],
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 )
               : ElevatedButton(
@@ -72,6 +78,9 @@ class PaymentTile extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo[900],
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: const Text("Pay Now"),
                 ),

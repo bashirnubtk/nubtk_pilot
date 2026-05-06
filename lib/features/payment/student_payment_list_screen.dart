@@ -1,5 +1,4 @@
-// D:\projects\nubtk_pilot\lib\features\payment\student_payment_list_screen.dart
-
+//D:\projects\nubtk_pilot\lib\features\payment\student_payment_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -40,8 +39,21 @@ class StudentPaymentListScreen extends StatelessWidget {
             itemCount: installments.length,
             itemBuilder: (context, index) {
               var inst = installments[index];
-              // ডাটাবেজ থেকে সরাসরি boolean চেক
               bool isPaid = inst['isPaid'] == true;
+
+              // --- সেমিস্টার এবং সেশন বের করার লজিক ---
+              // কিস্তির আইডি থেকে ইন্টিজার মান নেওয়া হচ্ছে
+              int instID = int.tryParse(inst['id'].toString()) ?? (index + 1);
+
+              // প্রতি ৩টি কিস্তিতে ১টি সেমিস্টার গণনা: ((ID - 1) / 3) + 1
+              int semesterNum = ((instID - 1) / 3).floor() + 1;
+
+              // সেমিস্টারের ভেতর কিস্তির ক্রম (Session): ((ID - 1) % 3) + 1
+              int sessionNum = ((instID - 1) % 3) + 1;
+
+              String displayName =
+                  "Semester $semesterNum (Session $sessionNum)";
+              // ----------------------------------------------
 
               return PaymentTile(
                 studentData: {
@@ -50,13 +62,14 @@ class StudentPaymentListScreen extends StatelessWidget {
                 },
                 paymentData: {
                   'status': isPaid ? 'Paid' : 'Due',
-                  'amount': '${inst['amount']} TK',
-                  'title': 'Semester ${inst['semester']}',
+                  'amount':
+                      '${inst['amount']}', // এখানে শুধু টাকার অংকটি পাঠানো হচ্ছে
+                  'month':
+                      displayName, // এখানে 'Semester X (Session Y)' পাঠানো হচ্ছে
                   'id': inst['id'],
                 },
-                // যদি পেইড হয়, তবে ক্লিক করলে কিছু হবে না
                 onPay: isPaid
-                    ? () {}
+                    ? () {} // পেমেন্ট হয়ে গেলে রিসিট ডাউনলোড লজিক PaymentTile এর ভেতরে আছে
                     : () => _showPaymentConfirmDialog(
                         context,
                         inst['id'],
@@ -70,6 +83,7 @@ class StudentPaymentListScreen extends StatelessWidget {
     );
   }
 
+  // পেমেন্ট কনফার্মেশন ডায়ালগ
   void _showPaymentConfirmDialog(
     BuildContext context,
     String installmentId,
@@ -90,6 +104,10 @@ class StudentPaymentListScreen extends StatelessWidget {
               Navigator.pop(ctx);
               _handlePayment(context, installmentId);
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo[900],
+              foregroundColor: Colors.white,
+            ),
             child: const Text("Pay Now"),
           ),
         ],
@@ -97,6 +115,7 @@ class StudentPaymentListScreen extends StatelessWidget {
     );
   }
 
+  // পেমেন্ট প্রসেসিং হ্যান্ডলার
   Future<void> _handlePayment(
     BuildContext context,
     String installmentId,
