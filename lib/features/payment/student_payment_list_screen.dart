@@ -1,8 +1,8 @@
+// D:\projects\nubtk_pilot\lib\features\payment\student_payment_list_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-// আপনার বিদ্যমান ইমপোর্টগুলো
 import '../student/screens/payment_tile.dart';
 import 'payment_service.dart';
 
@@ -20,54 +20,48 @@ class StudentPaymentListScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        // লজিক আপডেট: অ্যাডমিন যেহেতু 'students' কালেকশনে ডাটা সেভ করছে, তাই এখান থেকেই রিড করতে হবে
-        stream: FirebaseFirestore.instance.collection('students').doc(uid).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('students')
+            .doc(uid)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          
           if (!snapshot.hasData || snapshot.data?.data() == null) {
             return const Center(child: Text("No installment plan found."));
           }
 
           var data = snapshot.data!.data() as Map<String, dynamic>;
-          
-          // কিস্তি ডাটা চেক করা
-          if (!data.containsKey('installments')) {
-            return const Center(child: Text("No installment records."));
-          }
-
-          var installments = data['installments'] as List;
+          var installments = data['installments'] as List? ?? [];
 
           return ListView.builder(
             padding: const EdgeInsets.all(15),
             itemCount: installments.length,
             itemBuilder: (context, index) {
               var inst = installments[index];
-              
+              // ডাটাবেজ থেকে সরাসরি boolean চেক
+              bool isPaid = inst['isPaid'] == true;
+
               return PaymentTile(
+                studentData: {
+                  'fullName': data['fullName'] ?? 'Student',
+                  'studentId': data['studentId'] ?? data['digitalId'] ?? 'N/A',
+                },
                 paymentData: {
-                  'status': inst['isPaid'] == true ? 'Paid' : 'Due',
-                  'percentage': '${inst['amount']} TK',
-                  'month': 'Semester ${inst['semester']}',
-                  'semester': inst['semester'],
-                  'amount': inst['amount'],
-                  'name': data['fullName'] ?? 'Student',
-                  'digitalId': data['studentId'] ?? data['digitalId'] ?? 'N/A',
+                  'status': isPaid ? 'Paid' : 'Due',
+                  'amount': '${inst['amount']} TK',
+                  'title': 'Semester ${inst['semester']}',
+                  'id': inst['id'],
                 },
-                // এরর ফিক্স: ফাংশনটিকে সরাসরি এভাবে লিখলে 'VoidCallback' এর সমস্যা হবে না
-                onPay: () {
-                  if (inst['isPaid'] == true) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Already Paid!")),
-                    );
-                    return;
-                  }
-                  
-                  // পেমেন্ট প্রসেস শুরু
-                  _handlePayment(context, inst['id']);
-                },
+                // যদি পেইড হয়, তবে ক্লিক করলে কিছু হবে না
+                onPay: isPaid
+                    ? () {}
+                    : () => _showPaymentConfirmDialog(
+                        context,
+                        inst['id'],
+                        inst['amount'].toString(),
+                      ),
               );
             },
           );
@@ -76,15 +70,45 @@ class StudentPaymentListScreen extends StatelessWidget {
     );
   }
 
-  // পেমেন্ট লজিক আলাদা ফাংশন হিসেবে (যাতে এরর না আসে)
-  Future<void> _handlePayment(BuildContext context, String installmentId) async {
+  void _showPaymentConfirmDialog(
+    BuildContext context,
+    String installmentId,
+    String amount,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Confirm Payment"),
+        content: Text("Do you want to pay $amount TK?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _handlePayment(context, installmentId);
+            },
+            child: const Text("Pay Now"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handlePayment(
+    BuildContext context,
+    String installmentId,
+  ) async {
     try {
-      // আপনার বিদ্যমান সার্ভিস কল
       await PaymentService.markInstallmentPaid(installmentId);
-      
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Payment Successful!"), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text("Payment Successful!"),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {

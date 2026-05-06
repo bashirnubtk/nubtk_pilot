@@ -1,7 +1,10 @@
+// D:\projects\nubtk_pilot\lib\features\student\screens\student_dashboard_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// আপনার প্রজেক্ট স্ট্রাকচার অনুযায়ী সঠিক ইমপোর্ট পাথ
 import 'digital_id_screen.dart';
 import '../../payment/student_payment_list_screen.dart';
 import '../../ai_bot/ai_bot_screen.dart';
@@ -11,12 +14,16 @@ class StudentDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // বর্তমান ইউজারের UID সংগ্রহ
     final String? uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F2F5),
       appBar: AppBar(
-        title: const Text("Student Portal", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Student Portal",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.indigo[900],
         foregroundColor: Colors.white,
         elevation: 0,
@@ -34,18 +41,21 @@ class StudentDashboardScreen extends StatelessWidget {
                 }
               });
             },
-          )
+          ),
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        // লজিক আপডেট: ডাটা এখন 'students' কালেকশন থেকে আসবে
-        stream: FirebaseFirestore.instance.collection('students').doc(uid).snapshots(),
+        // ডাটাবেজ লজিক: 'students' কালেকশন থেকে ডাটা রিড করা হচ্ছে
+        stream: FirebaseFirestore.instance
+            .collection('students')
+            .doc(uid)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          
-          // যদি ডাটা না থাকে বা স্টুডেন্ট হিসেবে রেজিস্টার্ড না থাকে
+
+          // প্রোফাইল ডাটা না থাকলে বা অ্যাডমিন অ্যাপ্রুভ না করলে এই ভিউ দেখাবে
           if (!snapshot.hasData || snapshot.data?.data() == null) {
             return Center(
               child: Column(
@@ -53,8 +63,14 @@ class StudentDashboardScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.info_outline, size: 60, color: Colors.orange[300]),
                   const SizedBox(height: 10),
-                  const Text("Profile data not found.", style: TextStyle(fontSize: 16)),
-                  const Text("Please wait for Admin Approval.", style: TextStyle(color: Colors.grey)),
+                  const Text(
+                    "Profile data not found.",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  const Text(
+                    "Please wait for Admin Approval.",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
             );
@@ -67,7 +83,7 @@ class StudentDashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ১. স্টুডেন্ট প্রোফাইল কার্ড
+                // ১. স্টুডেন্ট প্রোফাইল কার্ড (ডিজাইন ও লজিক অপরিবর্তিত)
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -76,7 +92,11 @@ class StudentDashboardScreen extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 10,
+                        offset: Offset(0, 5),
+                      ),
                     ],
                   ),
                   padding: const EdgeInsets.all(20),
@@ -85,7 +105,11 @@ class StudentDashboardScreen extends StatelessWidget {
                       const CircleAvatar(
                         radius: 40,
                         backgroundColor: Colors.white,
-                        child: Icon(Icons.person, size: 50, color: Color(0xFF1A237E)),
+                        child: Icon(
+                          Icons.person,
+                          size: 50,
+                          color: Color(0xFF1A237E),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -97,24 +121,35 @@ class StudentDashboardScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 5),
-                      // ডিজিটাল আইডি (যা অ্যাডমিন জেনারেট করেছে)
+                      // ডিজিটাল আইডি লজিক
                       Text(
                         "ID: ${data['studentId'] ?? data['digitalId'] ?? 'Generating...'}",
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      // স্ট্যাটাস
+                      // একটিভ/পেন্ডিং স্ট্যাটাস ইন্ডিকেটর
                       Container(
                         margin: const EdgeInsets.only(top: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: data['status'] == 'approved' 
-                              ? Colors.green.withOpacity(0.4) 
+                          color: data['status'] == 'approved'
+                              ? Colors.green.withOpacity(0.4)
                               : Colors.orange.withOpacity(0.4),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          data['status'] == 'approved' ? "Status: Active" : "Status: Pending",
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                          data['status'] == 'approved'
+                              ? "Status: Active"
+                              : "Status: Pending",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                       const Padding(
@@ -124,7 +159,11 @@ class StudentDashboardScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.school, color: Colors.white70, size: 16),
+                          const Icon(
+                            Icons.school,
+                            color: Colors.white70,
+                            size: 16,
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             data['department'] ?? 'Dept: N/A',
@@ -143,7 +182,7 @@ class StudentDashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
 
-                // ২. গ্রিড মেনু (সব বাটন সচল)
+                // ২. গ্রিড মেনু (সব বাটন এবং নেভিগেশন লজিক সংযুক্ত)
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -161,7 +200,8 @@ class StudentDashboardScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => DigitalIdScreen(studentId: uid),
+                              builder: (context) =>
+                                  DigitalIdScreen(studentId: uid),
                             ),
                           );
                         }
@@ -175,20 +215,36 @@ class StudentDashboardScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const StudentPaymentListScreen(),
+                            builder: (context) =>
+                                const StudentPaymentListScreen(),
                           ),
                         );
                       },
                     ),
-                    _buildFeatureCard(Icons.quiz_rounded, "CT & Quiz", Colors.orange, () {
-                      _showComingSoon(context);
-                    }),
-                    _buildFeatureCard(Icons.video_library_rounded, "Class Video", Colors.red, () {
-                      _showComingSoon(context);
-                    }),
-                    _buildFeatureCard(Icons.event_note_rounded, "Routine", Colors.indigo, () {
-                      _showComingSoon(context);
-                    }),
+                    _buildFeatureCard(
+                      Icons.quiz_rounded,
+                      "CT & Quiz",
+                      Colors.orange,
+                      () {
+                        _showComingSoon(context);
+                      },
+                    ),
+                    _buildFeatureCard(
+                      Icons.video_library_rounded,
+                      "Class Video",
+                      Colors.red,
+                      () {
+                        _showComingSoon(context);
+                      },
+                    ),
+                    _buildFeatureCard(
+                      Icons.event_note_rounded,
+                      "Routine",
+                      Colors.indigo,
+                      () {
+                        _showComingSoon(context);
+                      },
+                    ),
                     _buildFeatureCard(
                       Icons.auto_awesome_rounded,
                       "AI Assistant",
@@ -196,9 +252,11 @@ class StudentDashboardScreen extends StatelessWidget {
                       () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const AiBotScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const AiBotScreen(),
+                          ),
                         );
-                      }
+                      },
                     ),
                   ],
                 ),
@@ -210,13 +268,20 @@ class StudentDashboardScreen extends StatelessWidget {
     );
   }
 
+  // কামিং সুন মেসেজ দেখানোর ফাংশন
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("This feature is coming soon!")),
     );
   }
 
-  Widget _buildFeatureCard(IconData icon, String title, Color color, VoidCallback onTap) {
+  // কার্ড ডিজাইন উইজেট (ডিজাইন কনসেপ্ট ঠিক রাখা হয়েছে)
+  Widget _buildFeatureCard(
+    IconData icon,
+    String title,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Card(
       elevation: 0,
       color: Colors.white,
