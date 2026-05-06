@@ -1,3 +1,4 @@
+//D:\projects\nubtk_pilot\lib\features\auth\auth_guard.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,7 +19,9 @@ class AuthGuard extends StatelessWidget {
       builder: (context, snapshot) {
         // লোডিং স্টেট
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         // ইউজার লগইন না থাকলে হোমে নিয়ে যাবে
@@ -31,10 +34,15 @@ class AuthGuard extends StatelessWidget {
         // ইউজার আইডি দিয়ে Firestore থেকে চেক করা
         return FutureBuilder<DocumentSnapshot>(
           // প্রথমে 'students' কালেকশন চেক করবে
-          future: FirebaseFirestore.instance.collection('students').doc(user.uid).get(),
+          future: FirebaseFirestore.instance
+              .collection('students')
+              .doc(user.uid)
+              .get(),
           builder: (context, studentSnapshot) {
             if (studentSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
             }
 
             // যদি স্টুডেন্ট হিসেবে পাওয়া যায়
@@ -51,15 +59,20 @@ class AuthGuard extends StatelessWidget {
 
             // স্টুডেন্ট না হলে 'admins' কালেকশন চেক করবে
             return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance.collection('admins').doc(user.uid).get(),
+              future: FirebaseFirestore.instance
+                  .collection('admins')
+                  .doc(user.uid)
+                  .get(),
               builder: (context, adminSnapshot) {
                 if (adminSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
                 }
 
                 // যদি অ্যাডমিন হিসেবে পাওয়া যায়
                 if (adminSnapshot.hasData && adminSnapshot.data!.exists) {
-                  return const AdminDashboard(); 
+                  return const AdminDashboard();
                 }
 
                 // কোনো লিস্টেই না থাকলে (নতুন ইউজার)

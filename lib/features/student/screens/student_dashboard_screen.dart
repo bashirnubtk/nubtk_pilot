@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// আপনার প্রজেক্ট স্ট্রাকচার অনুযায়ী সঠিক ইমপোর্ট পাথ
+// আপনার প্রজেক্ট স্ট্রাকচার অনুযায়ী সঠিক ইমপোর্ট পাথ
 import 'digital_id_screen.dart';
 import '../../payment/student_payment_list_screen.dart';
 import '../../ai_bot/ai_bot_screen.dart';
+// নতুন রিসোর্স স্ক্রিনের ইমপোর্ট যুক্ত করা হলো
+import 'student_resource_screen.dart';
 
 class StudentDashboardScreen extends StatelessWidget {
   const StudentDashboardScreen({super.key});
@@ -83,7 +85,7 @@ class StudentDashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ১. স্টুডেন্ট প্রোফাইল কার্ড (ডিজাইন ও লজিক অপরিবর্তিত)
+                // ১. স্টুডেন্ট প্রোফাইল কার্ড
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -121,7 +123,6 @@ class StudentDashboardScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 5),
-                      // ডিজিটাল আইডি লজিক
                       Text(
                         "ID: ${data['studentId'] ?? data['digitalId'] ?? 'Generating...'}",
                         style: const TextStyle(
@@ -129,7 +130,6 @@ class StudentDashboardScreen extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      // একটিভ/পেন্ডিং স্ট্যাটাস ইন্ডিকেটর
                       Container(
                         margin: const EdgeInsets.only(top: 8),
                         padding: const EdgeInsets.symmetric(
@@ -182,7 +182,7 @@ class StudentDashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
 
-                // ২. গ্রিড মেনু (সব বাটন এবং নেভিগেশন লজিক সংযুক্ত)
+                // ২. গ্রিড মেনু (এখানে আমরা Necessary Resources কার্ডটি যোগ করেছি)
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -221,28 +221,18 @@ class StudentDashboardScreen extends StatelessWidget {
                         );
                       },
                     ),
+                    // Necessary Resources বাটনটি এখানে যুক্ত করা হলো
                     _buildFeatureCard(
-                      Icons.quiz_rounded,
-                      "CT & Quiz",
-                      Colors.orange,
+                      Icons.library_books_rounded,
+                      "Resources",
+                      Colors.teal,
                       () {
-                        _showComingSoon(context);
-                      },
-                    ),
-                    _buildFeatureCard(
-                      Icons.video_library_rounded,
-                      "Class Video",
-                      Colors.red,
-                      () {
-                        _showComingSoon(context);
-                      },
-                    ),
-                    _buildFeatureCard(
-                      Icons.event_note_rounded,
-                      "Routine",
-                      Colors.indigo,
-                      () {
-                        _showComingSoon(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const StudentResourceScreen(),
+                          ),
+                        );
                       },
                     ),
                     _buildFeatureCard(
@@ -258,6 +248,22 @@ class StudentDashboardScreen extends StatelessWidget {
                         );
                       },
                     ),
+                    _buildFeatureCard(
+                      Icons.quiz_rounded,
+                      "CT & Quiz",
+                      Colors.orange,
+                      () {
+                        _showComingSoon(context);
+                      },
+                    ),
+                    _buildFeatureCard(
+                      Icons.event_note_rounded,
+                      "Routine",
+                      Colors.indigo,
+                      () {
+                        _showComingSoon(context);
+                      },
+                    ),
                   ],
                 ),
               ],
@@ -268,14 +274,12 @@ class StudentDashboardScreen extends StatelessWidget {
     );
   }
 
-  // কামিং সুন মেসেজ দেখানোর ফাংশন
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("This feature is coming soon!")),
     );
   }
 
-  // কার্ড ডিজাইন উইজেট (ডিজাইন কনসেপ্ট ঠিক রাখা হয়েছে)
   Widget _buildFeatureCard(
     IconData icon,
     String title,

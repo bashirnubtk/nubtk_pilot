@@ -8,7 +8,7 @@ class AdminPaymentApprovalScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // কন্ট্রোলারটি ইনিশিয়ালাইজ করা হলো
+    // কন্ট্রোলারটি ইনিশিয়ালাইজ করা হলো
     final AdminStudentController controller = AdminStudentController();
 
     return Scaffold(
@@ -18,15 +18,25 @@ class AdminPaymentApprovalScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // আমরা 'students' কালেকশন থেকে ডাটা নিচ্ছি
-        stream: FirebaseFirestore.instance.collection('students').snapshots(),
+        // এই স্ট্রিমটি শুধু সেইসব স্টুডেন্টদের দেখাবে যাদের অন্তত একটি কিস্তি 'Paid'
+        stream: FirebaseFirestore.instance
+            .collection('students')
+            .where(
+              'installments',
+              arrayContainsAny: [
+                {'isPaid': true},
+              ],
+            )
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No students found."));
+            return const Center(
+              child: Text("No students found with paid installments."),
+            );
           }
 
           var docs = snapshot.data!.docs;
@@ -36,7 +46,7 @@ class AdminPaymentApprovalScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               var data = docs[index].data() as Map<String, dynamic>;
               String docId = docs[index].id;
-              
+
               // চেক করা হচ্ছে স্টুডেন্ট অলরেডি অ্যাপ্রুভড কি না
               bool isApproved = data['approved'] ?? false;
 
@@ -48,26 +58,32 @@ class AdminPaymentApprovalScreen extends StatelessWidget {
                     data['fullName'] ?? 'Unknown Student',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text(isApproved ? "Status: Approved" : "Status: Pending"),
+                  subtitle: Text(
+                    isApproved ? "Status: Approved" : "Status: Pending",
+                  ),
                   trailing: ElevatedButton(
-                    // বাটন লজিক: 
-                    // যদি isApproved true হয়, তবে onPressed হবে null (যা বাটনকে disable করে দেয়)
-                    onPressed: isApproved 
-                      ? null 
-                      : () async {
-                          // এপ্রুভ ফাংশন কল করা
-                          await controller.approveStudent(
-                            docId: docId,
-                            data: data,
-                          );
-                          
-                          // সফল হলে একটি মেসেজ দেখানো
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("${data['fullName']} has been approved!")),
+                    // বাটন লজিক:
+                    // যদি isApproved true হয়, তবে onPressed হবে null (যা বাটনকে disable করে দেয়)
+                    onPressed: isApproved
+                        ? null
+                        : () async {
+                            // এপ্রুভ ফাংশন কল করা
+                            await controller.approveStudent(
+                              docId: docId,
+                              data: data,
                             );
-                          }
-                        },
+
+                            // সফল হলে একটি মেসেজ দেখানো
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    "${data['fullName']} has been approved!",
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       // বাটন এপ্রুভড হলে ধূসর (Grey), নাহলে সবুজ (Green)
                       backgroundColor: isApproved ? Colors.grey : Colors.green,

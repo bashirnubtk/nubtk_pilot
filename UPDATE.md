@@ -341,6 +341,11 @@ git add .
 git commit -m "Fixed payment loop and integrated semester-session logic"
 git push origin dev
 
+
+git add .
+git commit -m "feat: secure API keys and enhance AI with live database context"
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

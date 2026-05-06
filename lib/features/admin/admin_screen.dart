@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// সঠিক পাথ অনুযায়ী ইমপোর্ট নিশ্চিত করা হয়েছে
+// সঠিক পাথ অনুযায়ী ইমপোর্ট নিশ্চিত করা হয়েছে
 import 'admin_payment_approval_screen.dart'; // পেমেন্ট এপ্রুভাল স্ক্রিন
 import 'admin_student_list_screen.dart';   // স্টুডেন্ট লিস্ট স্ক্রিন
 import '../ai_bot/ai_bot_screen.dart';     // AI বট স্ক্রিন
+import 'admin_add_resource.dart';          // নতুন তৈরি করা অ্যাড রিসোর্স স্ক্রিন
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -15,7 +16,7 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   
-  // লগআউট ফাংশন যা নেভিগেশন স্ট্যাক ক্লিয়ার করবে
+  // লগআউট ফাংশন যা নেভিগেশন স্ট্যাক ক্লিয়ার করবে
   void _logout() {
     FirebaseAuth.instance.signOut().then((_) {
       if (context.mounted) {
@@ -98,7 +99,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     );
                   }),
 
-                  // ২. পেমেন্ট এপ্রুভাল (এখানে আপনার এররটি ছিল যা এখন ফিক্সড)
+                  // ২. পেমেন্ট এপ্রুভাল
                   _buildMenuCard(context, Icons.payment, "Approve Payment", Colors.green, () {
                     Navigator.push(
                       context,
@@ -110,11 +111,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   // ৩. কুইজ ও সিটি তৈরি
                   _buildMenuCard(context, Icons.quiz, "Create Quiz & CT", Colors.orange, () {
                     // ভবিষ্যতে পেজ যুক্ত করার জন্য
+                    _showInfo(context);
                   }),
                   
-                  // ৪. গিফট ক্লাস
-                  _buildMenuCard(context, Icons.video_library, "Gift Class", Colors.red, () {
-                    // ভবিষ্যতে পেজ যুক্ত করার জন্য
+                  // ৪. নতুন বাটন: অ্যাড রিসোর্স (এখানেই আমরা লিঙ্ক যুক্ত করার সুযোগ দিচ্ছি)
+                  _buildMenuCard(context, Icons.link_rounded, "Add Resources", Colors.red, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const AdminAddResource()),
+                    );
                   }),
 
                   // ৫. AI অ্যাসিস্ট্যান্ট
@@ -127,7 +133,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                   // ৬. তথ্য আপডেট
                   _buildMenuCard(context, Icons.update, "Update Info", Colors.teal, () {
-                    // ভবিষ্যতে পেজ যুক্ত করার জন্য
+                    _showInfo(context);
                   }),
                 ],
               ),
@@ -135,6 +141,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
       ),
+    );
+  }
+
+  // ইনফো দেখানোর জন্য ছোট ফাংশন
+  void _showInfo(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Working on this feature...")),
     );
   }
 
