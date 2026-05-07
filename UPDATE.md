@@ -367,6 +367,11 @@ git commit -m "fix: Connect Student Dashboard with AI Logic + Python Backend
 - Maintain existing student approval system untouched"
 git push origin dev
 
+git add .
+git add python_backend/main.py python_backend/requirements.txt
+git commit -m "feat: Add Railway deployment config for Python backend"
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
