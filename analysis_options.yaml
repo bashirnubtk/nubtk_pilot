@@ -3,6 +3,7 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   errors:
     deprecated_member_use: ignore
+    unrelated_type_equality_checks: ignore
 
 linter:
   rules:

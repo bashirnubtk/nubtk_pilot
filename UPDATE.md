@@ -346,6 +346,16 @@ git add .
 git commit -m "feat: secure API keys and enhance AI with live database context"
 git push origin dev
 
+git add .
+git commit -m "feat: Add 3-user role system + offline sync + Python FastAPI integration
+- Add api_service.dart for server/local AI analysis with offline queue
+- Add connectivity_plus for network check
+- Add python_backend with FastAPI wrapper for check_models.py
+- Add requirements.txt for Python dependencies
+- Update main.dart with auto-sync on app start
+- Support low-end devices using shared_preferences instead of sqlite"
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

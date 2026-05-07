@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // আপনার প্রজেক্টের নাম অনুযায়ী সঠিক ইমপোর্ট
-import '../../models/resource_model.dart';
 
 class AdminAddResource extends StatefulWidget {
   const AdminAddResource({super.key});

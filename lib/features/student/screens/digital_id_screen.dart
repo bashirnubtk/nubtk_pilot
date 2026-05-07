@@ -51,7 +51,7 @@ class DigitalIdScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.indigo[900],
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
                         color: Colors.black26,
                         blurRadius: 10,
@@ -84,7 +84,7 @@ class DigitalIdScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Divider(color: Colors.white24),
+                      const Divider(color: Colors.white24),
                       const SizedBox(height: 10),
                       Text(
                         "STUDENT ID: $displayId",

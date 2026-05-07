@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nubtk_pilot/features/models/resource_model.dart';
 import 'package:url_launcher/url_launcher.dart'; // এই প্যাকেজটি আপনার pubspec.yaml এ থাকা দরকার
-import '../../../models/resource_model.dart';
 
 class StudentResourceScreen extends StatelessWidget {
   const StudentResourceScreen({super.key});

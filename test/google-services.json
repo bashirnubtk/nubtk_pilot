@@ -14,14 +14,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "396396597164-8nknhrgipts4u7ique0kncl1g9i61ake.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.nubtk.pilot",
-            "certificate_hash": "18a6450d0ce30ed75e38ce7a2f3ff92baa1cefc6"
-          }
-        },
-        {
           "client_id": "396396597164-255gim32aj5964lq5hd0up1ljocpkqbr.apps.googleusercontent.com",
           "client_type": 3
         }

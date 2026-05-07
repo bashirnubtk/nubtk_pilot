@@ -1,9 +1,11 @@
+// D:\projects\nubtk_pilot\lib\features\ai_bot\ai_bot_screen.dart
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'ai_logic_center.dart';
+import 'ai_data_archive.dart';
 
 class AiBotScreen extends StatefulWidget {
   const AiBotScreen({super.key});
@@ -14,250 +16,252 @@ class AiBotScreen extends StatefulWidget {
 
 class _AiBotScreenState extends State<AiBotScreen> {
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
   Uint8List? _selectedImageBytes;
 
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  // ইমেজ পিক করার পর অটো সেন্ড হবে না
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (image!= null) {
       final bytes = await image.readAsBytes();
       setState(() => _selectedImageBytes = bytes);
-      _handleSend(fromImage: true);
     }
   }
 
-  Future<void> _handleSend({bool fromImage = false}) async {
+  // মেইন সেন্ড ফাংশন - রোল ডিটেক্ট করে পাঠাবে
+  Future<void> _handleSend() async {
     String text = _controller.text.trim();
     if (text.isEmpty && _selectedImageBytes == null) return;
 
+    final tempImage = _selectedImageBytes; // API তে পাঠানোর জন্য কপি
     setState(() {
       _messages.add({
-        "text": fromImage ? "[ছবি বিশ্লেষণ করা হচ্ছে...]" : text,
+        "text": text.isEmpty? "ছবি পাঠানো হয়েছে" : text,
         "isUser": true,
-        "image": _selectedImageBytes,
+        "image": tempImage,
       });
       _isLoading = true;
+      _selectedImageBytes = null; // UI থেকে ক্লিয়ার
     });
+    _scrollToBottom();
+    _controller.clear();
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       Map<String, dynamic>? studentData;
-      Map<String, dynamic> systemContext = {};
+      String userRole = 'guest'; // ডিফল্ট গেস্ট
 
-      // ১. পাবলিক তথ্য লোড (ইউনিভার্সিটির সাধারণ ডাটা)
-      var publicSnap = await FirebaseFirestore.instance
-          .collection('settings')
-          .doc('university_info')
-          .get();
-      systemContext['publicInfo'] =
-          publicSnap.data()?['raw_data'] ?? "তথ্য পাওয়া যায়নি।";
-
-      if (user != null) {
-        // ২. ইউজারের নিজের ডাটা রিড করা
-        var userSnap = await FirebaseFirestore.instance
-            .collection('students')
-            .doc(user.uid)
-            .get();
-        studentData = userSnap.data();
-        String role = studentData?['role'] ?? 'student';
-
-        if (role == 'admin') {
-          // অ্যাডমিনের জন্য ডাইনামিক ডাটা রিড (ডিপার্টমেন্ট অনুযায়ী স্টুডেন্ট সংখ্যা)
-          var allStudents = await FirebaseFirestore.instance
-              .collection('students')
-              .get();
-
-          Map<String, int> deptCount = {};
-          for (var doc in allStudents.docs) {
-            String dept = doc.data()['department'] ?? 'Unknown';
-            deptCount[dept] = (deptCount[dept] ?? 0) + 1;
+      // Firebase থেকে ইউজার রোল + ডাটা নাও
+      if (user!= null) {
+        try {
+          var userSnap = await FirebaseFirestore.instance.collection('students').doc(user.uid).get();
+          studentData = userSnap.data();
+          if (studentData!= null) {
+            userRole = studentData['role']?? 'student';
           }
-
-          systemContext['adminStats'] = {
-            "total_students": allStudents.docs.length,
-            "department_breakdown": deptCount,
-            "pending_approvals": allStudents.docs
-                .where((d) => d.data()['approved'] == false)
-                .length,
-          };
-        } else {
-          // ৩. স্টুডেন্টের নিজের পেমেন্ট ডাটা রিড করা
-          var paymentSnap = await FirebaseFirestore.instance
-              .collection('payments')
-              .where('userId', isEqualTo: user.uid)
-              .get();
-
-          double totalPaid = 0;
-          for (var doc in paymentSnap.docs) {
-            totalPaid += (doc.data()['amount'] ?? 0).toDouble();
-          }
-
-          systemContext['studentFees'] = {
-            "completed_installments": paymentSnap.docs.length,
-            "total_paid": totalPaid,
-            "department": studentData?['department'],
-          };
+        } catch (e) {
+          debugPrint("Firebase Error: $e");
+          // Firebase ফেইল করলে লোকাল আর্কাইভ থেকে টেস্ট ডাটা
+          studentData = AIDataArchive.getStudentData("2021-1-60-001");
+          userRole = 'student';
         }
       }
 
-      // ৪. এআই-এর কাছে সব ডাটা পাঠানো
       final response = await AILogicCenter.analyzeInput(
-        textInput: text.isNotEmpty ? text : null,
-        imageBytes: _selectedImageBytes,
+        textInput: text,
+        imageBytes: tempImage,
         studentData: studentData,
-        systemContext: systemContext,
+        userRole: userRole, // এইটা ইম্পর্ট্যান্ট
       );
 
-      setState(() {
-        _messages.add({
-          "text": response['reply'],
-          "suggestion": response['suggestion'],
-          "isUser": false,
-          "image": null,
+      if (mounted) {
+        setState(() {
+          _messages.add({
+            "text": response['reply']?? "উত্তর পাওয়া যায়নি",
+            "suggestion": response['suggestion'],
+            "isUser": false,
+            "image": null,
+          });
+          _isLoading = false;
         });
-        _selectedImageBytes = null;
-      });
+        _scrollToBottom();
+      }
     } catch (e) {
-      setState(() {
-        _messages.add({
-          "text": "সিস্টেম ত্রুটি। আবার চেষ্টা করুন।",
-          "isUser": false,
+      debugPrint("Handle Send Error: $e");
+      if (mounted) {
+        setState(() {
+          _messages.add({
+            "text": "দুঃখিত, একটি সমস্যা হয়েছে।",
+            "isUser": false,
+          });
+          _isLoading = false;
         });
-      });
-    } finally {
-      setState(() => _isLoading = false);
-      _controller.clear();
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text(
-          "NUBTK Pilot AI",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text("NUBTK Pilot AI", style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        elevation: 2,
         backgroundColor: Colors.indigo[900],
         foregroundColor: Colors.white,
+        elevation: 2,
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(10),
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
               itemCount: _messages.length,
-              itemBuilder: (context, index) =>
-                  _buildChatBubble(_messages[index]),
+              itemBuilder: (context, index) => _buildMessageBubble(_messages[index]),
             ),
           ),
-          if (_isLoading) const LinearProgressIndicator(),
-          _buildInputBar(),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+          // ইমেজ সিলেক্ট হলে প্রিভিউ দেখাবে
+          if (_selectedImageBytes!= null)
+            Container(
+              padding: const EdgeInsets.all(8),
+              color: Colors.white,
+              child: Stack(
+                alignment: Alignment.topRight,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.memory(_selectedImageBytes!, height: 100),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedImageBytes = null),
+                    child: const CircleAvatar(
+                      radius: 12,
+                      backgroundColor: Colors.black54,
+                      child: Icon(Icons.close, size: 14, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          _buildInputArea(),
         ],
       ),
     );
   }
 
-  Widget _buildChatBubble(Map<String, dynamic> msg) {
-    bool isUser = msg['isUser'] ?? false;
+  Widget _buildMessageBubble(Map<String, dynamic> msg) {
+    bool isUser = msg['isUser']?? false;
     return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5),
-        padding: const EdgeInsets.all(12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
-        ),
-        decoration: BoxDecoration(
-          color: isUser ? Colors.blue[600] : Colors.grey[200],
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(15),
-            topRight: const Radius.circular(15),
-            bottomLeft: Radius.circular(isUser ? 15 : 0),
-            bottomRight: Radius.circular(isUser ? 0 : 15),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (msg['image'] != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.memory(
-                    msg['image'],
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+      alignment: isUser? Alignment.centerRight : Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: isUser? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Container(
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            padding: const EdgeInsets.all(14),
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            decoration: BoxDecoration(
+              color: isUser? Colors.indigo[700] : Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: Radius.circular(isUser? 16 : 0),
+                bottomRight: Radius.circular(isUser? 0 : 16),
               ),
-            Text(
-              msg['text'] ?? "",
-              style: TextStyle(
-                fontSize: 15,
-                color: isUser ? Colors.white : Colors.black87,
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (msg['image']!= null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.memory(msg['image'], height: 200, width: double.infinity, fit: BoxFit.cover),
+                  ),
+                if (msg['image']!= null) const SizedBox(height: 8),
+                Text(
+                  msg['text']?? "",
+                  style: TextStyle(color: isUser? Colors.white : Colors.black87, fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+          if (msg['suggestion']!= null && msg['suggestion'].toString().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 10, right: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lightbulb_outline, size: 16, color: Colors.orange),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(msg['suggestion'],
+                        style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontStyle: FontStyle.italic)),
+                  ),
+                ],
               ),
             ),
-            if (msg['suggestion'] != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  "💡 ${msg['suggestion']}",
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic,
-                    color: Colors.blueGrey,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildInputBar() {
+  Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -2))],
       ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.image_outlined, color: Colors.blue),
-            onPressed: _pickImage,
-          ),
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                hintText: "আপনার প্রশ্নটি লিখুন...",
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 10),
-              ),
-              onSubmitted: (_) => _handleSend(),
+      child: SafeArea(
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.add_a_photo_rounded, color: Colors.indigo[900]),
+              onPressed: _pickImage,
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.send_rounded, color: Colors.blue),
-            onPressed: () => _handleSend(),
-          ),
-        ],
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(25)),
+                child: TextField(
+                  controller: _controller,
+                  decoration: const InputDecoration(hintText: "কিছু জিজ্ঞেস করুন...", border: InputBorder.none),
+                  onSubmitted: (_) => _handleSend(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            CircleAvatar(
+              backgroundColor: Colors.indigo[900],
+              child: IconButton(
+                icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                onPressed: _handleSend,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

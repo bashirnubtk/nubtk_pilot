@@ -3,9 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 // সঠিক পাথ অনুযায়ী ইমপোর্ট নিশ্চিত করা হয়েছে
 import 'admin_payment_approval_screen.dart'; // পেমেন্ট এপ্রুভাল স্ক্রিন
-import 'admin_student_list_screen.dart';   // স্টুডেন্ট লিস্ট স্ক্রিন
-import '../ai_bot/ai_bot_screen.dart';     // AI বট স্ক্রিন
-import 'admin_add_resource.dart';          // নতুন তৈরি করা অ্যাড রিসোর্স স্ক্রিন
+import 'admin_student_list_screen.dart'; // স্টুডেন্ট লিস্ট স্ক্রিন
+import '../ai_bot/ai_bot_screen.dart'; // AI বট স্ক্রিন
+import 'admin_add_resource.dart'; // নতুন তৈরি করা অ্যাড রিসোর্স স্ক্রিন
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -15,7 +15,6 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  
   // লগআউট ফাংশন যা নেভিগেশন স্ট্যাক ক্লিয়ার করবে
   void _logout() {
     FirebaseAuth.instance.signOut().then((_) {
@@ -65,9 +64,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Text(
                     "Welcome, Admin",
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   SizedBox(height: 5),
                   Text(
@@ -91,50 +91,92 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 mainAxisSpacing: 15,
                 children: [
                   // ১. স্টুডেন্ট লিস্ট
-                  _buildMenuCard(context, Icons.people, "Student List", Colors.blue, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const AdminStudentListScreen()),
-                    );
-                  }),
+                  _buildMenuCard(
+                    context,
+                    Icons.people,
+                    "Student List",
+                    Colors.blue,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminStudentListScreen(),
+                        ),
+                      );
+                    },
+                  ),
 
                   // ২. পেমেন্ট এপ্রুভাল
-                  _buildMenuCard(context, Icons.payment, "Approve Payment", Colors.green, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const AdminPaymentApprovalScreen()),
-                    );
-                  }),
+                  _buildMenuCard(
+                    context,
+                    Icons.payment,
+                    "Approve Payment",
+                    Colors.green,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const AdminPaymentApprovalScreen(),
+                        ),
+                      );
+                    },
+                  ),
 
                   // ৩. কুইজ ও সিটি তৈরি
-                  _buildMenuCard(context, Icons.quiz, "Create Quiz & CT", Colors.orange, () {
-                    // ভবিষ্যতে পেজ যুক্ত করার জন্য
-                    _showInfo(context);
-                  }),
-                  
+                  _buildMenuCard(
+                    context,
+                    Icons.quiz,
+                    "Create Quiz & CT",
+                    Colors.orange,
+                    () {
+                      // ভবিষ্যতে পেজ যুক্ত করার জন্য
+                      _showInfo(context);
+                    },
+                  ),
+
                   // ৪. নতুন বাটন: অ্যাড রিসোর্স (এখানেই আমরা লিঙ্ক যুক্ত করার সুযোগ দিচ্ছি)
-                  _buildMenuCard(context, Icons.link_rounded, "Add Resources", Colors.red, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const AdminAddResource()),
-                    );
-                  }),
+                  _buildMenuCard(
+                    context,
+                    Icons.link_rounded,
+                    "Add Resources",
+                    Colors.red,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminAddResource(),
+                        ),
+                      );
+                    },
+                  ),
 
                   // ৫. AI অ্যাসিস্ট্যান্ট
-                  _buildMenuCard(context, Icons.auto_awesome, "AI Assistant", Colors.purple, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AiBotScreen()),
-                    );
-                  }),
+                  _buildMenuCard(
+                    context,
+                    Icons.auto_awesome,
+                    "AI Assistant",
+                    Colors.purple,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AiBotScreen(),
+                        ),
+                      );
+                    },
+                  ),
 
                   // ৬. তথ্য আপডেট
-                  _buildMenuCard(context, Icons.update, "Update Info", Colors.teal, () {
-                    _showInfo(context);
-                  }),
+                  _buildMenuCard(
+                    context,
+                    Icons.update,
+                    "Update Info",
+                    Colors.teal,
+                    () {
+                      _showInfo(context);
+                    },
+                  ),
                 ],
               ),
             ),
@@ -146,14 +188,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   // ইনফো দেখানোর জন্য ছোট ফাংশন
   void _showInfo(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Working on this feature...")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Working on this feature...")));
   }
 
   // মেনু কার্ড উইজেট
-  Widget _buildMenuCard(BuildContext context, IconData icon, String title,
-      Color color, VoidCallback onTap) {
+  Widget _buildMenuCard(
+    BuildContext context,
+    IconData icon,
+    String title,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
