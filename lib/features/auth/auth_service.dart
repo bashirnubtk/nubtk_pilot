@@ -1,76 +1,84 @@
-// C:\projects\Flutter project\nubtk_pilot\lib\features\auth\auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // লগইন ফাংশন: স্টুডেন্ট এবং অ্যাডমিন উভয়ের জন্য
-  Future<String?> login(String email, String password) async {
+  // ইউজার রেজিস্টার + রোল সেট
+  Future<User?> register(String email, String password, String name) async {
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password.trim(),
-      );
-      return null; 
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') return "এই জিমেইলটি নিবন্ধিত নয়।";
-      if (e.code == 'wrong-password') return "ভুল পাসওয়ার্ড (ফোন নম্বর)!";
-      return e.message;
-    } catch (e) {
-      return e.toString();
-    }
-  }
-
-  // রোল চেক করার ফাংশন: লগইন এর পর ড্যাশবোর্ড ঠিক করার জন্য
-  Future<String> getRole(String uid) async {
-    DocumentSnapshot doc = await _db.collection('users').doc(uid).get();
-    return doc.exists ? (doc.get('role') ?? 'student') : 'student';
-  }
-
-  // নতুন রেজিস্ট্রেশন লজিক: ডাটা 'students' এবং 'users' উভয় কালেকশনে যাবে
-  Future<String?> registerStudent({
-    required String email,
-    required String password,
-    required Map<String, dynamic> studentData,
-  }) async {
-    try {
-      // ১. ফায়ারবেস অথেন্টিকেশনে ইউজার তৈরি
-      UserCredential res = await _auth.createUserWithEmailAndPassword(
-          email: email.trim(), 
-          password: password.trim()
+      UserCredential result = await _auth.createUserWithEmailAndPassword(
+        email: email, 
+        password: password
       );
       
-      if (res.user != null) {
-        final String uid = res.user!.uid;
-
-        // ২. 'students' কালেকশনে বিস্তারিত ডাটা পাঠানো (অ্যাডমিন প্যানেলের জন্য)
-        await _db.collection('students').doc(uid).set({
-          ...studentData,
-          'uid': uid,
-          'email': email.trim(),
-          'role': 'student',
-          'status': 'pending', // অ্যাডমিন এই পেন্ডিং স্ট্যাটাস দেখে এপ্রুভ করবেন
-          'approved': false,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-        
-        // ৩. 'users' কালেকশনে বেসিক ডাটা পাঠানো (লগইন ও রোল ম্যানেজমেন্টের জন্য)
-        await _db.collection('users').doc(uid).set({
-          'uid': uid,
-          'email': email.trim(),
-          'role': 'student',
-          'status': 'pending',
-        });
-        
-        return null; // সফলতা বুঝাতে null রিটার্ন
-      }
-    } on FirebaseAuthException catch (e) {
-      return e.message;
+      // Firestore এ ইউজার ডেটা সেভ, ডিফল্ট রোল 'pending'
+      await _db.collection('users').doc(result.user!.uid).set({
+        'uid': result.user!.uid,
+        'name': name,
+        'email': email,
+        'role': 'pending', // admin পরে approve করবে
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+      
+      return result.user;
     } catch (e) {
-      return e.toString();
+      print(e.toString());
+      return null;
     }
-    return "Registration Failed";
+  }
+
+  // লগইন + রোল চেক
+  Future<Map<String, dynamic>?> login(String email, String password) async {
+    try {
+      UserCredential result = await _auth.signInWithEmailAndPassword(
+        email: email, 
+        password: password
+      );
+      
+      // Firestore থেকে রোল আনো
+      DocumentSnapshot userDoc = await _db.collection('users').doc(result.user!.uid).get();
+      String role = userDoc['role'];
+      
+      // লোকালে সেভ করো, অফলাইনে লাগবে
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_role_${result.user!.uid}', role);
+      
+      return {
+        'user': result.user,
+        'role': role, // admin, student, pending
+      };
+    } catch (e) {
+      print(e.toString());
+      return null;
+    }
+  }
+
+  // বর্তমান ইউজারের রোল পাও
+  Future<String> getCurrentUserRole() async {
+    User? user = _auth.currentUser;
+    if (user == null) return 'guest';
+    
+    final prefs = await SharedPreferences.getInstance();
+    // প্রথমে লোকাল থেকে ট্রাই করো
+    String? localRole = prefs.getString('user_role_${user.uid}');
+    if (localRole != null) return localRole;
+    
+    // লোকালে না পেলে Firebase থেকে
+    DocumentSnapshot userDoc = await _db.collection('users').doc(user.uid).get();
+    return userDoc['role'] ?? 'student';
+  }
+
+  // অ্যাডমিন দিয়ে রোল আপডেট
+  Future<void> updateUserRole(String uid, String newRole) async {
+    await _db.collection('users').doc(uid).update({'role': newRole});
+  }
+
+  Future<dynamic> getRole(String uid) async {}
+
+  Future<String?> registerStudent({required String email, required String password, required Map<String, dynamic> studentData}) async {
+    return null;
   }
 }

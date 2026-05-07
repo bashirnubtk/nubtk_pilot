@@ -42,11 +42,11 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // ২. ফায়ারবেস লগইন লজিক (স্টুডেন্ট এবং অন্যান্য অ্যাডমিনদের জন্য)
-      String? loginResult = await _auth.login(emailInput, passInput);
+      Map<String, dynamic>? loginResult = await _auth.login(emailInput, passInput);
 
       if (loginResult != null) {
         // যদি লগইন ব্যর্থ হয় (ভুল ইমেইল বা পাসওয়ার্ড)
-        _showError(loginResult);
+        _showError(loginResult as String);
       } else {
         // লগইন সফল হলে রোল চেক করা
         User? user = FirebaseAuth.instance.currentUser;
