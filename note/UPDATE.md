@@ -200,6 +200,19 @@ git commit -m "fix: resolve all identified errors and sync payment logic" -m "
 - Synchronized StudentDashboard with real-time Firestore updates."
 git push origin dev
 
+
+
+
+git add .
+git commit -m "fix: Add admin user document in Firestore and fix admin logout navigation
+- Created admin document in users collection with proper role and UID
+- Added /login route in main.dart MaterialApp routes
+- Fixed admin logout crash by updating Navigator.pushNamedAndRemoveUntil
+- Improved logout function with async-await for stability on low-end devices
+- Ensures admin can login and logout properly without route errors"
+git push origin dev
+
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

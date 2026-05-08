@@ -1,85 +1,125 @@
-import 'dart:io';
+// D:\projects\nubtk_pilot\lib\services\api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:image_picker/image_picker.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://your-python-api.up.railway.app';
+  // Railway বা আপনার সার্ভারের আসল URL এখানে দিন
+  // এমুলেটরের জন্য 10.0.2.2, রিয়েল ফোনের জন্য আপনার পিসির IP লাগবে
+  static const String _baseUrl = 'http://10.0.2.2:8000'; 
   
-  final SharedPreferences prefs;
-  ApiService(this.prefs);
+  final SharedPreferences _prefs;
+  static const String _queueKey = 'offline_upload_queue';
 
-  Future<String> getUserRole(String uid) async {
-    return prefs.getString('user_role_$uid') ?? 'student';
+  ApiService(this._prefs);
+
+  // নেট চেক করার ফাংশন (সংশোধিত)
+  Future<bool> _isOnline() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    // connectivity_plus এর নতুন ভার্সনে এটি List রিটার্ন করে
+    if (connectivityResult.contains(ConnectivityResult.mobile) || 
+        connectivityResult.contains(ConnectivityResult.wifi)) {
+      return true;
+    }
+    return false;
   }
 
+  // ছবি অ্যানালাইসিস - মেইন ফাংশন
   Future<Map<String, dynamic>> analyzeImage(XFile imageFile, String userId) async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    final hasInternet = connectivityResult != ConnectivityResult.none;
+    bool online = await _isOnline();
 
-    if (hasInternet) {
+    if (online) {
       try {
-        var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/analyze'));
-        request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-        request.fields['user_id'] = userId;
-        
-        var response = await request.send();
-        var respStr = await response.stream.bytesToString();
-        
-        if (response.statusCode == 200) {
-          final result = jsonDecode(respStr);
-          await _clearPendingUpload(imageFile.path);
-          return {'success': true, 'data': result['data'], 'source': 'server'};
-        } else {
-          throw Exception('Server Error: ${response.statusCode}');
-        }
+        return await _sendToServer(imageFile, userId);
       } catch (e) {
-        await _savePendingUpload(imageFile.path, userId);
-        return {'success': false, 'error': e.toString(), 'source': 'local_queue'};
+        // সার্ভারে পাঠাতে ব্যর্থ হলে অফলাইনে সেভ হবে
+        await _addToOfflineQueue(imageFile.path, userId);
+        return {
+          'success': false,
+          'source': 'offline',
+          'message': 'Server unreachable, saved for later.'
+        };
       }
     } else {
-      await _savePendingUpload(imageFile.path, userId);
+      await _addToOfflineQueue(imageFile.path, userId);
       return {
-        'success': true, 
-        'data': {'status': 'pending_sync', 'message': 'নেট আসলে অটো আপলোড হবে'},
-        'source': 'offline'
+        'success': true,
+        'source': 'offline',
+        'data': {'message': 'Saved offline. Will sync when online.'}
       };
     }
   }
 
-  Future<void> _savePendingUpload(String imagePath, String userId) async {
-    List<String> pendingList = prefs.getStringList('pending_uploads') ?? [];
-    pendingList.add(jsonEncode({
-      'path': imagePath,
-      'user_id': userId,
-      'timestamp': DateTime.now().toIso8601String()
-    }));
-    await prefs.setStringList('pending_uploads', pendingList);
+  // সার্ভারে পাঠানোর ফাংশন (সংশোধিত)
+  Future<Map<String, dynamic>> _sendToServer(XFile imageFile, String userId) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/analyze'), 
+      );
+      
+      request.fields['userId'] = userId;
+      request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+
+      var streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      var response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        var jsonResponse = jsonDecode(response.body);
+        return {
+          'success': true,
+          'source': 'server',
+          'data': jsonResponse // এআই-এর সম্পূর্ণ রেসপন্স
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Server returned ${response.statusCode}'
+        };
+      }
+    } catch (e) {
+      rethrow; // analyzeImage ফাংশন এটি হ্যান্ডেল করবে
+    }
   }
 
-  Future<void> _clearPendingUpload(String imagePath) async {
-    List<String> pendingList = prefs.getStringList('pending_uploads') ?? [];
-    pendingList.removeWhere((item) {
-      final data = jsonDecode(item);
-      return data['path'] == imagePath;
-    });
-    await prefs.setStringList('pending_uploads', pendingList);
+  // অফলাইন কিউতে অ্যাড করা
+  Future<void> _addToOfflineQueue(String imagePath, String userId) async {
+    List<String> queue = _prefs.getStringList(_queueKey) ?? [];
+    Map<String, String> item = {
+      'imagePath': imagePath,
+      'userId': userId,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    queue.add(jsonEncode(item));
+    await _prefs.setStringList(_queueKey, queue);
   }
 
+  // নেট আসলে অটো সিঙ্ক (সংশোধিত)
   Future<void> syncPendingUploads() async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    // ignore: unrelated_type_equality_checks
-    if (connectivityResult == ConnectivityResult.none) return;
+    bool online = await _isOnline();
+    if (!online) return;
 
-    List<String> pendingList = prefs.getStringList('pending_uploads') ?? [];
-    for (String item in List.from(pendingList)) {
-      final data = jsonDecode(item);
-      final file = File(data['path']); // XFile না, File ইউজ করো exists চেকের জন্য
-      if (await file.exists()) {
-        await analyzeImage(XFile(data['path']), data['user_id']);
+    List<String> queue = _prefs.getStringList(_queueKey) ?? [];
+    if (queue.isEmpty) return;
+
+    List<String> remainingQueue = [];
+
+    for (String itemStr in queue) {
+      try {
+        Map<String, dynamic> item = jsonDecode(itemStr);
+        XFile imageFile = XFile(item['imagePath']);
+        var result = await _sendToServer(imageFile, item['userId']);
+        
+        if (result['success'] != true) {
+          remainingQueue.add(itemStr);
+        }
+      } catch (e) {
+        remainingQueue.add(itemStr);
       }
     }
+
+    await _prefs.setStringList(_queueKey, remainingQueue);
   }
 }

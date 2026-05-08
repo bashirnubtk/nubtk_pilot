@@ -1,15 +1,26 @@
+//D:\projects\nubtk_pilot\lib\main.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'features/home/languages/language_provider.dart';
 import 'package:nubtk_pilot/features/home/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nubtk_pilot/services/api_service.dart';
-// তোমার হোম স্ক্রিনের নাম
+import 'package:nubtk_pilot/features/auth/login_screen.dart'; // LoginScreen ইমপোর্ট করো
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   final prefs = await SharedPreferences.getInstance();
-  runApp(MyApp(prefs: prefs));
+  
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+      ],
+      child: MyApp(prefs: prefs),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -25,7 +36,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    // অ্যাপ স্টার্ট হলেই পেন্ডিং আপলোড সিঙ্ক হবে
     ApiService(widget.prefs).syncPendingUploads();
   }
 
@@ -33,10 +43,17 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'NUBTK PILOT',
+      debugShowCheckedModeBanner: false, 
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        useMaterial3: true,
       ),
-      home: const HomeScreen(), // তোমার প্রথম স্ক্রিন
+      // এই লাইনটা চেঞ্জ করেছি - routes অ্যাড করলাম
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/login': (context) => const LoginScreen(), // লগইন রুট অ্যাড করলাম
+      },
     );
   }
 }

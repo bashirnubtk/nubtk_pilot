@@ -1,3 +1,4 @@
+//D:\projects\nubtk_pilot\lib\features\admin\admin_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -16,12 +17,11 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   // লগআউট ফাংশন যা নেভিগেশন স্ট্যাক ক্লিয়ার করবে
-  void _logout() {
-    FirebaseAuth.instance.signOut().then((_) {
-      if (context.mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-      }
-    });
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
   }
 
   @override

@@ -35,18 +35,19 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      // ১. মাস্টার অ্যাডমিন লগইন (আপনার ডিফল্ট পাসওয়ার্ড)
+      // ১. মাস্টার অ্যাডমিন লগইন
       if (_isAdminMode && emailInput == "admin" && passInput == "admin@123") {
         _navigateTo(const AdminDashboard());
         return;
       }
 
-      // ২. ফায়ারবেস লগইন লজিক (স্টুডেন্ট এবং অন্যান্য অ্যাডমিনদের জন্য)
+      // ২. ফায়ারবেস লগইন লজিক
       Map<String, dynamic>? loginResult = await _auth.login(emailInput, passInput);
 
-      if (loginResult != null) {
-        // যদি লগইন ব্যর্থ হয় (ভুল ইমেইল বা পাসওয়ার্ড)
-        _showError(loginResult as String);
+      // সংশোধন: এখানে চেক করা হচ্ছে লগইন সফল কি না
+      if (loginResult['success'] == false) {
+        // যদি এরর মেসেজ থাকে তবে সেটা দেখানো
+        _showError(loginResult['message']?.toString() ?? "Login failed");
       } else {
         // লগইন সফল হলে রোল চেক করা
         User? user = FirebaseAuth.instance.currentUser;
@@ -61,20 +62,21 @@ class _LoginScreenState extends State<LoginScreen> {
           } else if (role == 'admin' && _isAdminMode) {
             _navigateTo(const AdminDashboard());
           } else {
-            // যদি স্টুডেন্ট মোডে অ্যাডমিন লগইন করতে চায় বা উল্টোটা হয়
             await FirebaseAuth.instance.signOut();
             _showError("Role mismatch! You are in ${_isAdminMode ? 'ADMIN' : 'STUDENT'} portal.");
           }
+        } else {
+           _showError("User not found after login.");
         }
       }
     } catch (e) {
+      // কাস্টিং এরর এড়াতে e.toString() ব্যবহার করা হয়েছে
       _showError(e.toString().replaceAll("Exception: ", ""));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  // স্ক্রিন নেভিগেশনের জন্য হেল্পার ফাংশন
   void _navigateTo(Widget screen) {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
@@ -84,11 +86,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // এরর দেখানোর জন্য হেল্পার ফাংশন
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message), 
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -139,7 +144,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 25),
                 child: Column(
                   children: [
-                    // মোড সুইচার
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
@@ -166,8 +170,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 25),
-                    
-                    // লগইন কার্ড
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -180,6 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           TextFormField(
                             controller: _email,
+                            keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               labelText: _isAdminMode ? "Admin ID" : "Email Address",
                               prefixIcon: Icon(Icons.person_outline, color: primaryColor),

@@ -1,3 +1,4 @@
+//D:\projects\nubtk_pilot\lib\features\student\screens\student_dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +8,8 @@ import '../../ai_bot/ai_bot_screen.dart';
 import '../../ai_bot/ai_logic_center.dart';
 import 'student_resource_screen.dart';
 import '../../../models/analysis_result_model.dart';
+import '../../auth/auth_service.dart';
+import '../../auth/login_screen.dart';
 
 class StudentDashboardScreen extends StatefulWidget {
   const StudentDashboardScreen({super.key});
@@ -17,6 +20,7 @@ class StudentDashboardScreen extends StatefulWidget {
 
 class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   final AILogicCenter _aiLogic = AILogicCenter(); // ← I বড় হাতের, AILogicCenter
+  final AuthService _authService = AuthService();
   bool _isUploading = false;
 
   Future<void> _uploadForAnalysis() async {
@@ -30,6 +34,18 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           content: Text(message),
           backgroundColor: message.contains("Success")? Colors.green : Colors.red,
         ),
+      );
+    }
+  }
+
+  // লগআউট ফাংশন আপডেট করা হলো
+  void _logout() async {
+    await _authService.logout();
+    if (context.mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
       );
     }
   }
@@ -51,17 +67,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              FirebaseAuth.instance.signOut().then((_) {
-                if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/login',
-                    (route) => false,
-                  );
-                }
-              });
-            },
+            onPressed: _logout,
           ),
         ],
       ),
@@ -135,7 +141,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: data['status'] == 'approved'
-                            ? Colors.green.withOpacity(0.4)
+                           ? Colors.green.withOpacity(0.4)
                               : Colors.orange.withOpacity(0.4),
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -185,7 +191,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                       ElevatedButton.icon(
                         onPressed: _isUploading? null : _uploadForAnalysis,
                         icon: _isUploading
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.cloud_upload),
                         label: Text(_isUploading? 'Analyzing...' : 'Upload & Analyze'),
                         style: ElevatedButton.styleFrom(
@@ -250,11 +256,11 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-        .collection('results')
-        .where('userId', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
-        .limit(5)
-        .snapshots(),
+       .collection('results')
+       .where('userId', isEqualTo: uid)
+       .orderBy('createdAt', descending: true)
+       .limit(5)
+       .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
