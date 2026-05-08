@@ -213,6 +213,19 @@ git commit -m "fix: Add admin user document in Firestore and fix admin logout na
 git push origin dev
 
 
+
+git add .
+git commit -m "fix(ai): resolve firestore permission errors and integrate OpenRouter
+- Update Firestore rules to allow public read on resources collection for guest access
+- Add composite index for results(userId, createdAt desc) query
+- Integrate flutter_dotenv and load OPENROUTER_API_KEY from .env
+- Fix ApiService to use dotenv getter and add required OpenRouter headers
+- Update ai_bot_screen to handle guest role and prevent permission crashes
+- Switch to free model meta-llama/llama-3.1-8b-instruct:free
+Fixes: permission-denied on resources, connection issues, guest crash"
+git push origin dev
+
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

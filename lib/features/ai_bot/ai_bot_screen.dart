@@ -2,10 +2,10 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'ai_logic_center.dart';
-import 'ai_data_archive.dart';
+import '../../services/api_service.dart';
+import '../../services/firebase_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AiBotScreen extends StatefulWidget {
   const AiBotScreen({super.key});
@@ -21,6 +21,22 @@ class _AiBotScreenState extends State<AiBotScreen> {
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
   Uint8List? _selectedImageBytes;
+  XFile? _selectedXFile; // সার্ভারে পাঠানোর জন্য
+
+  late ApiService _apiService;
+  late FirebaseService _firebaseService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initServices();
+  }
+
+  Future<void> _initServices() async {
+    final prefs = await SharedPreferences.getInstance();
+    _apiService = ApiService(prefs);
+    _firebaseService = FirebaseService();
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -34,66 +50,78 @@ class _AiBotScreenState extends State<AiBotScreen> {
     });
   }
 
-  // ইমেজ পিক করার পর অটো সেন্ড হবে না
+  // ইমেজ পিক - XFile ও রাখছি সার্ভারে পাঠানোর জন্য
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (image!= null) {
       final bytes = await image.readAsBytes();
-      setState(() => _selectedImageBytes = bytes);
+      setState(() {
+        _selectedImageBytes = bytes;
+        _selectedXFile = image;
+      });
     }
   }
 
-  // মেইন সেন্ড ফাংশন - রোল ডিটেক্ট করে পাঠাবে
+  // মেইন সেন্ড ফাংশন - সব লজিক এখানে
   Future<void> _handleSend() async {
     String text = _controller.text.trim();
-    if (text.isEmpty && _selectedImageBytes == null) return;
+    if (text.isEmpty && _selectedXFile == null) return;
 
-    final tempImage = _selectedImageBytes; // API তে পাঠানোর জন্য কপি
+    final tempImageBytes = _selectedImageBytes;
+    final tempXFile = _selectedXFile;
+
     setState(() {
       _messages.add({
         "text": text.isEmpty? "ছবি পাঠানো হয়েছে" : text,
         "isUser": true,
-        "image": tempImage,
+        "image": tempImageBytes,
       });
       _isLoading = true;
-      _selectedImageBytes = null; // UI থেকে ক্লিয়ার
+      _selectedImageBytes = null;
+      _selectedXFile = null;
     });
     _scrollToBottom();
     _controller.clear();
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      Map<String, dynamic>? studentData;
-      String userRole = 'guest'; // ডিফল্ট গেস্ট
+      String userRole = 'guest';
+      Map<String, dynamic> contextData = {};
 
-      // Firebase থেকে ইউজার রোল + ডাটা নাও
+      // 1. ইউজার রোল + ডাটা লোড করো
       if (user!= null) {
-        try {
-          var userSnap = await FirebaseFirestore.instance.collection('students').doc(user.uid).get();
-          studentData = userSnap.data();
-          if (studentData!= null) {
-            userRole = studentData['role']?? 'student';
-          }
-        } catch (e) {
-          debugPrint("Firebase Error: $e");
-          // Firebase ফেইল করলে লোকাল আর্কাইভ থেকে টেস্ট ডাটা
-          studentData = AIDataArchive.getStudentData("2021-1-60-001");
-          userRole = 'student';
+        userRole = await _firebaseService.getUserRole();
+
+        if (userRole == 'student') {
+          contextData['paymentInfo'] = await _firebaseService.getStudentPaymentInfo(user.uid);
+        }
+        if (userRole == 'admin') {
+          contextData['allStudents'] = await _firebaseService.getAllStudentsReport();
         }
       }
 
-      final response = await AILogicCenter.analyzeInput(
-        textInput: text,
-        imageBytes: tempImage,
-        studentData: studentData,
-        userRole: userRole, // এইটা ইম্পর্ট্যান্ট
-      );
+      // 2. রিসোর্স সবসময় লোড করো - AI যেন লিংক দিতে পারে
+      contextData['resources'] = await _firebaseService.getAllResources();
+
+      Map<String, dynamic> response;
+
+      // 3. ছবি থাকলে ছবি + টেক্সট একসাথে পাঠাও, না হলে শুধু চ্যাট
+      if (tempXFile!= null) {
+        // ছবি + টেক্সট: Python Backend এ পাঠাও
+        response = await _apiService.analyzeImage(tempXFile, user?.uid?? 'guest');
+        if (response['success'] == true) {
+          response['data'] = response['data']['result']?? response['data']['message']?? 'ছবি বিশ্লেষণ সম্পন্ন।';
+        }
+      } else {
+        // শুধু টেক্সট: OpenRouter এ পাঠাও + Context সহ
+        response = await _apiService.chatWithAI(text, userRole, contextData);
+      }
 
       if (mounted) {
         setState(() {
           _messages.add({
-            "text": response['reply']?? "উত্তর পাওয়া যায়নি",
-            "suggestion": response['suggestion'],
+            "text": response['data']?? response['error']?? "উত্তর পাওয়া যায়নি",
+            "suggestion": null,
             "isUser": false,
             "image": null,
           });
@@ -106,7 +134,7 @@ class _AiBotScreenState extends State<AiBotScreen> {
       if (mounted) {
         setState(() {
           _messages.add({
-            "text": "দুঃখিত, একটি সমস্যা হয়েছে।",
+            "text": "দুঃখিত, একটি সমস্যা হয়েছে: $e",
             "isUser": false,
           });
           _isLoading = false;
@@ -141,7 +169,6 @@ class _AiBotScreenState extends State<AiBotScreen> {
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
-          // ইমেজ সিলেক্ট হলে প্রিভিউ দেখাবে
           if (_selectedImageBytes!= null)
             Container(
               padding: const EdgeInsets.all(8),
@@ -154,7 +181,10 @@ class _AiBotScreenState extends State<AiBotScreen> {
                     child: Image.memory(_selectedImageBytes!, height: 100),
                   ),
                   GestureDetector(
-                    onTap: () => setState(() => _selectedImageBytes = null),
+                    onTap: () => setState(() {
+                      _selectedImageBytes = null;
+                      _selectedXFile = null;
+                    }),
                     child: const CircleAvatar(
                       radius: 12,
                       backgroundColor: Colors.black54,
@@ -174,55 +204,35 @@ class _AiBotScreenState extends State<AiBotScreen> {
     bool isUser = msg['isUser']?? false;
     return Align(
       alignment: isUser? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: isUser? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          Container(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-            padding: const EdgeInsets.all(14),
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            decoration: BoxDecoration(
-              color: isUser? Colors.indigo[700] : Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isUser? 16 : 0),
-                bottomRight: Radius.circular(isUser? 0 : 16),
-              ),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (msg['image']!= null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.memory(msg['image'], height: 200, width: double.infinity, fit: BoxFit.cover),
-                  ),
-                if (msg['image']!= null) const SizedBox(height: 8),
-                Text(
-                  msg['text']?? "",
-                  style: TextStyle(color: isUser? Colors.white : Colors.black87, fontSize: 15),
-                ),
-              ],
-            ),
+      child: Container(
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: isUser? Colors.indigo[700] : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isUser? 16 : 0),
+            bottomRight: Radius.circular(isUser? 0 : 16),
           ),
-          if (msg['suggestion']!= null && msg['suggestion'].toString().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 10, right: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.lightbulb_outline, size: 16, color: Colors.orange),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(msg['suggestion'],
-                        style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontStyle: FontStyle.italic)),
-                  ),
-                ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (msg['image']!= null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.memory(msg['image'], height: 200, width: double.infinity, fit: BoxFit.cover),
               ),
+            if (msg['image']!= null) const SizedBox(height: 8),
+            Text(
+              msg['text']?? "",
+              style: TextStyle(color: isUser? Colors.white : Colors.black87, fontSize: 15),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,14 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // 🔥 এই লাইন অ্যাড করো
 import 'features/home/languages/language_provider.dart';
 import 'package:nubtk_pilot/features/home/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nubtk_pilot/services/api_service.dart';
-import 'package:nubtk_pilot/features/auth/login_screen.dart'; // LoginScreen ইমপোর্ট করো
+import 'package:nubtk_pilot/features/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env"); // 🔥 এই লাইন অ্যাড করো - মাস্ট
   await Firebase.initializeApp();
   final prefs = await SharedPreferences.getInstance();
   
@@ -48,11 +50,10 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      // এই লাইনটা চেঞ্জ করেছি - routes অ্যাড করলাম
       initialRoute: '/',
       routes: {
         '/': (context) => const HomeScreen(),
-        '/login': (context) => const LoginScreen(), // লগইন রুট অ্যাড করলাম
+        '/login': (context) => const LoginScreen(),
       },
     );
   }

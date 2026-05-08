@@ -1,3 +1,4 @@
+//D:\projects\nubtk_pilot\lib\models\analysis_result_model.dart
 class AnalysisResult {
   final String id;
   final String userId;
