@@ -1,9 +1,9 @@
 //D:\projects\nubtk_pilot\lib\features\home\languages\language_selection_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../lib/core/constants/app_strings.dart';
+import '../../../core/constants/app_strings.dart';
 import 'language_provider.dart';
-import '../../lib/features/home/home_screen.dart';
+import '../home_screen.dart';
 
 class LanguageSelectionScreen extends StatelessWidget {
   const LanguageSelectionScreen({super.key});

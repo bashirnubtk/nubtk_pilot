@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // 🔥 এই লাইন অ্যাড করো
-import '../recyle bin/languages/language_provider.dart';
 import 'package:nubtk_pilot/features/home/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nubtk_pilot/services/api_service.dart';
@@ -18,7 +17,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+       
       ],
       child: MyApp(prefs: prefs),
     ),

@@ -1,7 +1,7 @@
 //D:\projects\nubtk_pilot\lib\features\home\splash_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../recyle bin/languages/language_selection_screen.dart';
+import 'package:nubtk_pilot/features/auth/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     });
   }

@@ -1,11 +1,9 @@
 //D:\projects\nubtk_pilot\lib\features\home\home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:nubtk_pilot/features/ai_bot/ai_bot_screen.dart';
-import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // 🔥 অ্যাড করলাম
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/constants/app_strings.dart';
-import '../../../recyle bin/languages/language_provider.dart';
 import '../auth/login_screen.dart';
 import '../auth/register_screen.dart';
 
@@ -26,8 +24,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final languageCode = Provider.of<LanguageProvider>(context).languageCode;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F9),
       body: CustomScrollView(
@@ -46,20 +42,20 @@ class HomeScreen extends StatelessWidget {
                   _headerGreeting(),
                   const SizedBox(height: 25),
 
-                  _sectionTitle('📢', AppStrings.latestNotices[languageCode]!),
+                  _sectionTitle('📢', AppStrings.latestNotices['en']!),
                   const SizedBox(height: 12),
                   _noticeSection(),
                   const SizedBox(height: 30),
 
                   _sectionTitle('🚀', "Quick Actions"),
                   const SizedBox(height: 15),
-                  _buildQuickActionGrid(languageCode, context),
+                  _buildQuickActionGrid(context),
                   const SizedBox(height: 35),
 
-                  _aiAssistantButton(languageCode, context),
+                  _aiAssistantButton(context),
                   const SizedBox(height: 25),
 
-                  _authButtons(languageCode, context),
+                  _authButtons(context),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -150,7 +146,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   // কুইক অ্যাকশন গ্রিড
-  Widget _buildQuickActionGrid(String lang, BuildContext context) {
+  Widget _buildQuickActionGrid(BuildContext context) {
     return GridView.count(
       shrinkWrap: true,
       padding: EdgeInsets.zero,
@@ -236,15 +232,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // AI Assistant Button - 🔥 স্টেপ ১ এর ফিক্স এখানে
-  Widget _aiAssistantButton(String languageCode, BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser; // 🔥 চেক করো লগইন আছে কিনা
+  // AI Assistant Button
+  Widget _aiAssistantButton(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
 
     return InkWell(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => AiBotScreen(isGuestMode: user == null), // 🔥 গেস্ট হলে true পাঠাও
+          builder: (_) => AiBotScreen(isGuestMode: user == null),
         ),
       ),
       child: Container(
@@ -266,7 +262,7 @@ class HomeScreen extends StatelessWidget {
             const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 22),
             const SizedBox(width: 12),
             Text(
-              user == null? "Guest AI Chat" : AppStrings.askAIBot[languageCode]!, // 🔥 টেক্সট চেঞ্জ
+              user == null ? "Guest AI Chat" : AppStrings.askAIBot['en']!,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -311,12 +307,12 @@ class HomeScreen extends StatelessWidget {
   }
 
   // লগইন ও রেজিস্ট্রেশন বাটন
-  Widget _authButtons(String languageCode, BuildContext context) {
+  Widget _authButtons(BuildContext context) {
     return Row(
       children: [
         Expanded(
           child: _modernButton(
-            title: AppStrings.login[languageCode]!,
+            title: AppStrings.login['en']!,
             isFilled: false,
             onPressed: () => Navigator.push(
               context,
@@ -327,7 +323,7 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(width: 15),
         Expanded(
           child: _modernButton(
-            title: AppStrings.register[languageCode]!,
+            title: AppStrings.register['en']!,
             isFilled: true,
             onPressed: () => Navigator.push(
               context,
@@ -348,9 +344,9 @@ class HomeScreen extends StatelessWidget {
       height: 55,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: isFilled? const Color(0xFF4F46E5) : Colors.white,
-          foregroundColor: isFilled? Colors.white : const Color(0xFF4F46E5),
-          elevation: isFilled? 4 : 0,
+          backgroundColor: isFilled ? const Color(0xFF4F46E5) : Colors.white,
+          foregroundColor: isFilled ? Colors.white : const Color(0xFF4F46E5),
+          elevation: isFilled ? 4 : 0,
           shadowColor: Colors.indigo.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),

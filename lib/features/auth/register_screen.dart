@@ -1,9 +1,7 @@
 // C:\projects\Flutter project\nubtk_pilot\lib\features\auth\register_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../../recyle bin/languages/language_provider.dart';
 import 'waiting_approval_screen.dart';
 import 'auth_service.dart'; // AuthService ইম্পোর্ট করা হয়েছে
 
@@ -69,7 +67,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // আপডেট করা _submit ফাংশন
-  void _submit(String lang) async {
+  void _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_photoPath.isEmpty || _sscPath.isEmpty || _hscPath.isEmpty) {
@@ -129,8 +127,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final lang = Provider.of<LanguageProvider>(context).languageCode;
-
     return Scaffold(
       body: Stack(
         children: [
@@ -220,7 +216,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 width: double.infinity,
                                 height: 55,
                                 child: ElevatedButton(
-                                  onPressed: _isLoading ? null : () => _submit(lang),
+                                  onPressed: _isLoading ? null : _submit,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF4F46E5),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
