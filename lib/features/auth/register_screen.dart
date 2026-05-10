@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import '../home/languages/language_provider.dart';
+import '../../../recyle bin/languages/language_provider.dart';
 import 'waiting_approval_screen.dart';
 import 'auth_service.dart'; // AuthService ইম্পোর্ট করা হয়েছে
 

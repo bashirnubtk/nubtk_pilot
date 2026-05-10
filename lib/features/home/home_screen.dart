@@ -1,11 +1,13 @@
+//D:\projects\nubtk_pilot\lib\features\home\home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:nubtk_pilot/features/ai_bot/ai_bot_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // 🔥 অ্যাড করলাম
 import '../../core/constants/app_strings.dart';
-import 'languages/language_provider.dart';
+import '../../../recyle bin/languages/language_provider.dart';
 import '../auth/login_screen.dart';
 import '../auth/register_screen.dart';
-import '../ai_bot/ai_bot_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -234,12 +236,16 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // AI Assistant Button
+  // AI Assistant Button - 🔥 স্টেপ ১ এর ফিক্স এখানে
   Widget _aiAssistantButton(String languageCode, BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser; // 🔥 চেক করো লগইন আছে কিনা
+
     return InkWell(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const AiBotScreen()),
+        MaterialPageRoute(
+          builder: (_) => AiBotScreen(isGuestMode: user == null), // 🔥 গেস্ট হলে true পাঠাও
+        ),
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
@@ -260,7 +266,7 @@ class HomeScreen extends StatelessWidget {
             const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 22),
             const SizedBox(width: 12),
             Text(
-              AppStrings.askAIBot[languageCode]!,
+              user == null? "Guest AI Chat" : AppStrings.askAIBot[languageCode]!, // 🔥 টেক্সট চেঞ্জ
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -342,9 +348,9 @@ class HomeScreen extends StatelessWidget {
       height: 55,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: isFilled ? const Color(0xFF4F46E5) : Colors.white,
-          foregroundColor: isFilled ? Colors.white : const Color(0xFF4F46E5),
-          elevation: isFilled ? 4 : 0,
+          backgroundColor: isFilled? const Color(0xFF4F46E5) : Colors.white,
+          foregroundColor: isFilled? Colors.white : const Color(0xFF4F46E5),
+          elevation: isFilled? 4 : 0,
           shadowColor: Colors.indigo.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),

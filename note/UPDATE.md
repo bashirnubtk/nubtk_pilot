@@ -226,6 +226,13 @@ Fixes: permission-denied on resources, connection issues, guest crash"
 git push origin dev
 
 
+git add .
+git commit -m "fix: add Firestore composite index for students collection query
+- Added composite index: status ASC + approvalDate DESC
+- Fixes 'failed-precondition' error in Admin Payment Approval screen
+- Index status: Building -> Enabled"
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

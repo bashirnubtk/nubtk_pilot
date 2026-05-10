@@ -1,6 +1,7 @@
+//D:\projects\nubtk_pilot\lib\features\home\splash_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'languages/language_selection_screen.dart';
+import '../../../recyle bin/languages/language_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

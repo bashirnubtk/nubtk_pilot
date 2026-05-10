@@ -1,4 +1,4 @@
-// D:\projects\nubtk_pilot\lib\features\auth\auth_service.dart
+//D:\projects\nubtk_pilot\lib\features\auth\auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,6 +34,10 @@ class AuthService {
   // লগইন + রোল চেক (সংশোধিত)
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
+      // 🔥 ফিক্স: লগইন এর আগে সব পুরান ক্যাশ ক্লিয়ার করে নাও
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
       UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email, 
         password: password
@@ -49,7 +53,6 @@ class AuthService {
       String role = userDoc['role'] ?? 'student';
       
       // লোকালে সেভ করো
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_role_${result.user!.uid}', role);
       
       return {
@@ -65,15 +68,13 @@ class AuthService {
     }
   }
 
-  // লগআউট ফাংশন - নতুন যোগ করা হলো
+  // লগআউট ফাংশন - 🔥 ফিক্স: সব ক্যাশ ক্লিয়ার
   Future<void> logout() async {
     try {
-      User? currentUser = _auth.currentUser;
-      if (currentUser != null) {
-        // লোকাল SharedPreferences থেকে রোল ডিলিট করো
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('user_role_${currentUser.uid}');
-      }
+      // 🔥 পুরা SharedPreferences ক্লিয়ার করে দাও। একটা কী ও রাখবা না।
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      
       // Firebase থেকে সাইন আউট করো
       await _auth.signOut();
     } catch (e) {
@@ -116,7 +117,7 @@ class AuthService {
     await prefs.setString('user_role_$uid', newRole);
   }
 
-  // স্টুডেন্ট রেজিস্ট্রেশন মেথড (যদি লাগে)
+  // 🔥 ফিক্স: স্টুডেন্ট রেজিস্ট্রেশন - students কালেকশনেও সেভ করবে
   Future<String?> registerStudent({
     required String email, 
     required String password, 
@@ -124,7 +125,27 @@ class AuthService {
   }) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      await _db.collection('users').doc(result.user!.uid).set(studentData);
+      String uid = result.user!.uid;
+      
+      // 1. users কালেকশনে সেভ - লগইন এর জন্য
+      await _db.collection('users').doc(uid).set({
+        'uid': uid,
+        'email': email,
+        'role': 'student',
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+
+      // 2. 🔥 students কালেকশনে সেভ - এডমিন এপ্রুভালের জন্য
+      await _db.collection('students').doc(uid).set({
+        ...studentData,
+        'uid': uid,
+        'email': email,
+        'status': 'pending', // 🔥 এটা দিয়ে এডমিন ফিল্টার করবে
+        'approved': false,
+        'role': 'student',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      
       return null; // Null মানে কোন এরর নেই
     } catch (e) {
       return e.toString();

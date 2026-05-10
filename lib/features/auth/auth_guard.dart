@@ -31,54 +31,62 @@ class AuthGuard extends StatelessWidget {
 
         final user = snapshot.data!;
 
-        // ইউজার আইডি দিয়ে Firestore থেকে চেক করা
+        // 🔥 ফিক্স: প্রথমে users কালেকশন চেক করো
         return FutureBuilder<DocumentSnapshot>(
-          // প্রথমে 'students' কালেকশন চেক করবে
           future: FirebaseFirestore.instance
-              .collection('students')
+              .collection('users')
               .doc(user.uid)
               .get(),
-          builder: (context, studentSnapshot) {
-            if (studentSnapshot.connectionState == ConnectionState.waiting) {
+          builder: (context, userSnapshot) {
+            if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );
             }
 
-            // যদি স্টুডেন্ট হিসেবে পাওয়া যায়
-            if (studentSnapshot.hasData && studentSnapshot.data!.exists) {
-              final data = studentSnapshot.data!.data() as Map<String, dynamic>;
-              final String status = data['status'] ?? 'pending';
-
-              if (status == 'approved') {
-                return const StudentDashboardScreen();
-              } else {
-                return const WaitingApprovalScreen();
-              }
+            // users কালেকশনে না পেলে HomeScreen
+            if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+              return const HomeScreen();
             }
 
-            // স্টুডেন্ট না হলে 'admins' কালেকশন চেক করবে
-            return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('admins')
-                  .doc(user.uid)
-                  .get(),
-              builder: (context, adminSnapshot) {
-                if (adminSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
-                }
+            final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+            final String role = userData['role'] ?? 'student';
 
-                // যদি অ্যাডমিন হিসেবে পাওয়া যায়
-                if (adminSnapshot.hasData && adminSnapshot.data!.exists) {
-                  return const AdminDashboard();
-                }
+            // রোল অনুযায়ী রিডাইরেক্ট
+            if (role == 'admin') {
+              return const AdminDashboard();
+            } else if (role == 'student') {
+              // স্টুডেন্ট হলে students কালেকশন থেকে status চেক করো
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('students')
+                    .doc(user.uid)
+                    .get(),
+                builder: (context, studentSnapshot) {
+                  if (studentSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
 
-                // কোনো লিস্টেই না থাকলে (নতুন ইউজার)
-                return const HomeScreen();
-              },
-            );
+                  if (studentSnapshot.hasData && studentSnapshot.data!.exists) {
+                    final data = studentSnapshot.data!.data() as Map<String, dynamic>;
+                    final String status = data['status'] ?? 'pending';
+
+                    if (status == 'approved') {
+                      return const StudentDashboardScreen();
+                    } else {
+                      return const WaitingApprovalScreen();
+                    }
+                  } else {
+                    // students কালেকশনে না থাকলে Waiting
+                    return const WaitingApprovalScreen();
+                  }
+                },
+              );
+            } else {
+              return const HomeScreen();
+            }
           },
         );
       },

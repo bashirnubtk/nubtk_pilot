@@ -1,11 +1,13 @@
 //D:\projects\nubtk_pilot\lib\features\admin\admin_screen.dart
 import 'package:flutter/material.dart';
+import 'package:nubtk_pilot/features/ai_bot/ai_bot_screen.dart'; // 🔥 এই লাইন অ্যাড করো
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // 🔥 ক্যাশ ক্লিয়ার এর জন্য অ্যাড করলাম
 
 // সঠিক পাথ অনুযায়ী ইমপোর্ট নিশ্চিত করা হয়েছে
 import 'admin_payment_approval_screen.dart'; // পেমেন্ট এপ্রুভাল স্ক্রিন
 import 'admin_student_list_screen.dart'; // স্টুডেন্ট লিস্ট স্ক্রিন
-import '../ai_bot/ai_bot_screen.dart'; // AI বট স্ক্রিন
+// AI বট স্ক্রিন
 import 'admin_add_resource.dart'; // নতুন তৈরি করা অ্যাড রিসোর্স স্ক্রিন
 
 class AdminDashboard extends StatefulWidget {
@@ -18,6 +20,8 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   // লগআউট ফাংশন যা নেভিগেশন স্ট্যাক ক্লিয়ার করবে
   void _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // 🔥 ক্যাশ ক্লিয়ার - এটাই গেস্ট-এডমিন গুলানোর সমাধান
     await FirebaseAuth.instance.signOut();
     if (mounted) {
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
@@ -161,7 +165,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AiBotScreen(),
+                          builder: (context) => const AiBotScreen(isGuestMode: false), // 🔥 এডমিন থেকে গেলে isGuestMode: false
                         ),
                       );
                     },

@@ -1,15 +1,17 @@
-//D:\projects\nubtk_pilot\lib\features\student\screens\student_dashboard_screen.dart
+// D:\projects\nubtk_pilot\lib\features\student\screens\student_dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'digital_id_screen.dart';
 import '../../payment/student_payment_list_screen.dart';
 import '../../ai_bot/ai_bot_screen.dart';
-import '../../ai_bot/ai_logic_center.dart';
 import 'student_resource_screen.dart';
 import '../../../models/analysis_result_model.dart';
 import '../../auth/auth_service.dart';
 import '../../auth/login_screen.dart';
+import '../../../services/api_service.dart'; // 🔥 ApiService ইমপোর্ট
 
 class StudentDashboardScreen extends StatefulWidget {
   const StudentDashboardScreen({super.key});
@@ -19,13 +21,62 @@ class StudentDashboardScreen extends StatefulWidget {
 }
 
 class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
-  final AILogicCenter _aiLogic = AILogicCenter(); // ← I বড় হাতের, AILogicCenter
   final AuthService _authService = AuthService();
+  late ApiService _apiService; // 🔥 ডিফাইন করলাম
   bool _isUploading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _initApiService(); // 🔥 ApiService ইনিশিয়ালাইজ
+  }
+
+  Future<void> _initApiService() async {
+    final prefs = await SharedPreferences.getInstance();
+    _apiService = ApiService(prefs);
+  }
+
+  // 🔥 ফিক্স: _aiLogic ডিলিট, ApiService ইউজ
   Future<void> _uploadForAnalysis() async {
     setState(() => _isUploading = true);
-    String message = await _aiLogic.pickImageAndAnalyzeWithPython();
+    String message = '';
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        message = "Error: Please login first";
+      } else {
+        final ImagePicker picker = ImagePicker();
+        final XFile? image = await picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 70,
+        );
+        if (image == null) {
+          message = "Error: No image selected";
+        } else {
+          final result = await _apiService.analyzeImage(image, user.uid); // 🔥 ApiService ইউজ
+          if (result['success'] == true && result['data']!= null) {
+            String docId = FirebaseFirestore.instance.collection('results').doc().id;
+            AnalysisResult analysisResult = AnalysisResult(
+              id: docId,
+              userId: user.uid,
+              imageUrl: image.path,
+              aiData: result['data'],
+              createdAt: DateTime.now(),
+              status: result['source'] == 'offline'? 'pending_sync' : 'completed',
+              source: result['source'],
+            );
+            await FirebaseFirestore.instance.collection('results').doc(docId).set(analysisResult.toJson());
+            message = "Success: Analysis done via ${result['source']}";
+          } else {
+            message = "Error: ${result['error']}";
+          }
+        }
+      }
+    } catch (e) {
+      message = "Error: $e";
+    }
+
     setState(() => _isUploading = false);
 
     if (mounted) {
@@ -38,9 +89,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     }
   }
 
-  // লগআউট ফাংশন আপডেট করা হলো
   void _logout() async {
-    await _authService.logout();
+    await _authService.logout(); // 🔥 এখানেই ক্যাশ ক্লিয়ার হবে - auth_service.dart এ ঠিক করতে হবে
     if (context.mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -141,7 +191,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: data['status'] == 'approved'
-                           ? Colors.green.withOpacity(0.4)
+                         ? Colors.green.withOpacity(0.4)
                               : Colors.orange.withOpacity(0.4),
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -191,7 +241,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                       ElevatedButton.icon(
                         onPressed: _isUploading? null : _uploadForAnalysis,
                         icon: _isUploading
-                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.cloud_upload),
                         label: Text(_isUploading? 'Analyzing...' : 'Upload & Analyze'),
                         style: ElevatedButton.styleFrom(
@@ -229,7 +279,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentResourceScreen()));
                     }),
                     _buildFeatureCard(Icons.auto_awesome_rounded, "AI Assistant", Colors.purple, () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AiBotScreen()));
+                      if (uid!= null) { // 🔥 uid null চেক সেফটি
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const AiBotScreen(isGuestMode: false))); // 🔥 গেস্ট না
+                      }
                     }),
                     _buildFeatureCard(Icons.quiz_rounded, "CT & Quiz", Colors.orange, () => _showComingSoon(context)),
                     _buildFeatureCard(Icons.event_note_rounded, "Routine", Colors.indigo, () => _showComingSoon(context)),
@@ -256,11 +308,11 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-       .collection('results')
-       .where('userId', isEqualTo: uid)
-       .orderBy('createdAt', descending: true)
-       .limit(5)
-       .snapshots(),
+     .collection('results')
+     .where('userId', isEqualTo: uid)
+     .orderBy('createdAt', descending: true)
+     .limit(5)
+     .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
