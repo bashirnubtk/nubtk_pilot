@@ -424,6 +424,15 @@ git commit -m "feat: add native splash + fix adaptive app icon
 - Remove splash delay, direct HomeScreen navigation"
 git push origin dev
 
+
+git add .
+git commit -m "feat: integrate Firebase App Check for Firestore security
+- Add firebase_app_check dependency
+- Activate App Check with debug provider in main.dart
+- Ensures all Firestore requests are from verified app instances
+- Works with updated Firestore rules using request.app check"
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

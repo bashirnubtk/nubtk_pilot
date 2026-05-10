@@ -16,6 +16,7 @@ dependencies:
   cloud_firestore: ^5.6.2
   firebase_auth: ^5.7.0
   firebase_storage: ^12.4.2
+  firebase_app_check: ^0.3.2+1 # 🔥 এখানে নিয়ে আসছি
   file_picker: ^10.3.10
   pdf: ^3.10.4
   printing: ^5.12.0
@@ -38,7 +39,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.0
   flutter_launcher_icons: ^0.13.1
-  flutter_native_splash: ^2.4.1 # 🔥 এই লাইন অ্যাড করছি - সাদা স্ক্রিন 0ms
+  flutter_native_splash: ^2.4.1
 
 flutter:
   uses-material-design: true
@@ -46,7 +47,6 @@ flutter:
     - assets/images/
     - .env
 
-# 🔥 ১. ফোনের হোম স্ক্রিনের আইকন - গোল + পারফেক্ট সাইজ
 flutter_launcher_icons:
   android: true
   ios: true
@@ -56,10 +56,9 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/images/logo.png"
   remove_alpha_ios: true
 
-# 🔥 ২. অ্যাপ খোলার সময় সাদা স্ক্রিন 0ms - নেটিভ স্প্ল্যাশ
 flutter_native_splash:
   color: "#FFFFFF"
-  image: assets/images/nubtk_pilot.png # 🔥 তোমার স্প্ল্যাশের ছবি
+  image: assets/images/nubtk_pilot.png
   android: true
   ios: true
   android_12:
