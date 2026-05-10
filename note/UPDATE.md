@@ -233,6 +233,14 @@ git commit -m "fix: add Firestore composite index for students collection query
 - Index status: Building -> Enabled"
 git push origin dev
 
+git add .
+git commit -m "chore: remove unused localization feature and dead code
+- Removed duplicate language folders and unused imports
+- App defaults to English hardcoded text
+- Cleaned up splash, home, register screens and main.dart"
+git push origin dev
+
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
