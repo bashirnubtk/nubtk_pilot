@@ -433,6 +433,13 @@ git commit -m "feat: integrate Firebase App Check for Firestore security
 - Works with updated Firestore rules using request.app check"
 git push origin dev
 
+
+git add .
+git rm --cached .env
+git rm --cached android/app/google-services.json
+git commit -m "fix: add .env and keys to gitignore"
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 

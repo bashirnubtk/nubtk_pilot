@@ -1,4 +1,4 @@
-// D:\projects\nubtk_pilot\lib\features\ai_bot\ai_data_archive.dart
+/*/ D:\projects\nubtk_pilot\lib\features\ai_bot\ai_data_archive.dart
 
 class AIDataArchive {
   // ইউনিভার্সিটির ডিটেইলস ওয়েবসাইট ডাটা
@@ -45,3 +45,4 @@ class AIDataArchive {
     );
   }
 }
+*/

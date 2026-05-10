@@ -1,4 +1,4 @@
-//D:\projects\nubtk_pilot\lib\features\ai_bot\ai_logic_center.dart
+/*/D:\projects\nubtk_pilot\lib\features\ai_bot\ai_logic_center.dart
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -292,4 +292,4 @@ class AILogicCenter {
       return "Error: $e";
     }
   }
-}
+}*/

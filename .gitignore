@@ -43,3 +43,19 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# 🔥 Firebase & Secrets - এইগুলা মাস্ট অ্যাড করছি
+.env.*
+*.env
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+android/app/src/main/AndroidManifest.xml
+
+# 🔥 Keystore & Release keys - হারাইলে অ্যাপ আপডেট দিতে পারবা না
+*.jks
+*.keystore
+key.properties
+upload-keystore.jks
+
+# 🔥 Local config
+local.properties
