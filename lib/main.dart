@@ -2,22 +2,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // 🔥 এই লাইন অ্যাড করো
-import 'package:nubtk_pilot/features/home/home_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:nubtk_pilot/features/home/splash_screen.dart';
+import 'package:nubtk_pilot/features/home/home_screen.dart'; // 🔥 অ্যাড করলাম
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nubtk_pilot/services/api_service.dart';
 import 'package:nubtk_pilot/features/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env"); // 🔥 এই লাইন অ্যাড করো - মাস্ট
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp();
   final prefs = await SharedPreferences.getInstance();
   
   runApp(
     MultiProvider(
       providers: [
-       
+        Provider<SharedPreferences>.value(value: prefs),
       ],
       child: MyApp(prefs: prefs),
     ),
@@ -27,7 +28,6 @@ void main() async {
 class MyApp extends StatefulWidget {
   final SharedPreferences prefs;
   const MyApp({super.key, required this.prefs});
-
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -49,9 +49,9 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      initialRoute: '/',
+      home: const SplashScreen(), // 🔥 initialRoute বাদ দিয়ে home দিলাম
       routes: {
-        '/': (context) => const HomeScreen(),
+        '/home': (context) => const HomeScreen(), // 🔥 HomeScreen এর রুট
         '/login': (context) => const LoginScreen(),
       },
     );

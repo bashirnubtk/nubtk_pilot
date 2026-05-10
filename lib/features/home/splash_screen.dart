@@ -1,60 +1,31 @@
 //D:\projects\nubtk_pilot\lib\features\home\splash_screen.dart
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:nubtk_pilot/features/auth/login_screen.dart';
+import 'package:nubtk_pilot/features/home/home_screen.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // 🔥 টাইমার, initState কিছু নাই। Build হওয়ার সাথে সাথে HomeScreen push
+    // Flutter ইঞ্জিন লোডের 0.1s সাদা স্ক্রিন বাদে আর সাদা আসবে না। 98% ছবি।
+    Future.microtask(() => Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+    ));
+
     return Scaffold(
-      backgroundColor: Colors.indigo,
+      backgroundColor: Colors.white,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/nubtk_logo.png',
-              width: 120,
-              height: 120,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Northern University of\nBusiness & Technology Khulna',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
+        child: Image.asset(
+          'assets/images/nubtk_pilot.png',
+          width: MediaQuery.of(context).size.width * 0.8,
+          errorBuilder: (context, error, stackTrace) {
+            return const Text(
               'NUBTK PILOT',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                letterSpacing: 2,
-              ),
-            ),
-          ],
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF4F46E5)),
+            );
+          },
         ),
       ),
     );

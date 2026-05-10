@@ -413,6 +413,11 @@ git add python_backend/main.py python_backend/requirements.txt
 git commit -m "feat: Add Railway deployment config for Python backend"
 git push origin dev
 
+git add .
+git commit -m "Final: Splash 0ms white screen, adaptive icon, HomeScreen first"
+git push origin dev
+
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
