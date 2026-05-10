@@ -38,6 +38,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.0
   flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1 # 🔥 এই লাইন অ্যাড করছি - সাদা স্ক্রিন 0ms
 
 flutter:
   uses-material-design: true
@@ -45,12 +46,22 @@ flutter:
     - assets/images/
     - .env
 
-# 🔥 ফোনের হোম স্ক্রিনের আইকন - গোল + পারফেক্ট সাইজ
+# 🔥 ১. ফোনের হোম স্ক্রিনের আইকন - গোল + পারফেক্ট সাইজ
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo.png" # 🔥 তোমার লোগোর আসল নাম এখানে দাও
+  image_path: "assets/images/logo.png" 
   min_sdk_android: 21
-  adaptive_icon_background: "#FFFFFF" # 🔥 সাদা ব্যাকগ্রাউন্ড। নীল চাইলে "#0A2F73" দাও
-  adaptive_icon_foreground: "assets/images/ic_launcher.png" # 🔥 একই ছবি
+  adaptive_icon_background: "#FFFFFF" 
+  adaptive_icon_foreground: "assets/images/logo.png"
   remove_alpha_ios: true
+
+# 🔥 ২. অ্যাপ খোলার সময় সাদা স্ক্রিন 0ms - নেটিভ স্প্ল্যাশ
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/images/nubtk_pilot.png # 🔥 তোমার স্প্ল্যাশের ছবি
+  android: true
+  ios: true
+  android_12:
+    image: assets/images/nubtk_pilot.png
+    color: "#FFFFFF"

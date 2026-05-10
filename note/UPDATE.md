@@ -417,6 +417,12 @@ git add .
 git commit -m "Final: Splash 0ms white screen, adaptive icon, HomeScreen first"
 git push origin dev
 
+git add .
+git commit -m "feat: add native splash + fix adaptive app icon
+- Add flutter_native_splash for 0ms white screen
+- Fix adaptive_icon with transparent logo 1024x1024
+- Remove splash delay, direct HomeScreen navigation"
+git push origin dev
 
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
