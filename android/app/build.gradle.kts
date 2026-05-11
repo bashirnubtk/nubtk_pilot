@@ -1,13 +1,20 @@
 import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
 }
 
-// ফ্ল্যাটারের লোকাল প্রোপার্টিজ থেকে ভার্সন ডাটা লোড করা
+// key.properties থেকে পাসওয়ার্ড লোড করবে
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+// ফ্ল্যাটারের লোকাল প্রোপার্টিজ
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
@@ -18,11 +25,8 @@ val flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "
 val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
 android {
-    // আপনার প্রজেক্টের ইউনিক প্যাকেজ নাম
     namespace = "com.nubtk.pilot"
     compileSdk = flutter.compileSdkVersion
-    
-    // NDK ভার্সন আপডেট করা হয়েছে যাতে প্লাগইন এরর না দেয়
     ndkVersion = "28.2.13676358"
 
     compileOptions {
@@ -34,23 +38,38 @@ android {
         jvmTarget = "1.8"
     }
 
+    // 🔥 ফিক্স ১: Debug Key সেট করলাম
+    signingConfigs {
+        getByName("debug") {
+            // Debug keystore অটো ইউজ হবে। কিছু করা লাগবে না।
+        }
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
+
     defaultConfig {
         applicationId = "com.nubtk.pilot"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
-        
-        // মাল্টি-ডেক্স সাপোর্ট এনাবল করা (বড় প্রজেক্টের জন্য জরুরি)
         multiDexEnabled = true
     }
 
     buildTypes {
-        release {
+        // 🔥 ফিক্স ২: Debug এ debug signing সেট করলাম
+        debug {
             signingConfig = signingConfigs.getByName("debug")
-            // রিলিজ মোডে কোড ছোট করার জন্য নিচের অপশনগুলো ব্যবহার করা হয়
-            isMinifyEnabled = false
-            isShrinkResources = false
+        }
+        release {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
@@ -60,8 +79,10 @@ flutter {
 }
 
 dependencies {
-    // ফায়ারবেস এবং অন্যান্য লাইব্রেরি
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("androidx.multidex:multidex:2.0.1")
 }
+
+// 🔥 ফিক্স ৩: এই লাইনটা সবার শেষে থাকবে
+apply(plugin = "com.google.gms.google-services")

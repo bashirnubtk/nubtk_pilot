@@ -8,7 +8,6 @@ import '../../features/home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -17,60 +16,59 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
   final AuthService _auth = AuthService();
-
   bool _loading = false;
   bool _obscurePassword = true;
   bool _isAdminMode = false;
 
-  /// লগইন হ্যান্ডলার লজিক
+  /// লগইন হ্যান্ডলার লজিক - ফাইনাল
   void _handleLogin() async {
     final String emailInput = _email.text.trim();
     final String passInput = _password.text.trim();
-
+    
     if (emailInput.isEmpty || passInput.isEmpty) {
-      _showError("Please enter both ID/Email and password");
+      _showError("ইমেইল এবং পাসওয়ার্ড দুটোই দিন");
       return;
     }
-
+    
     setState(() => _loading = true);
-
+    
     try {
-      // ১. মাস্টার অ্যাডমিন লগইন
-      if (_isAdminMode && emailInput == "admin" && passInput == "admin@123") {
-        _navigateTo(const AdminDashboard());
-        return;
+      String finalEmail = emailInput;
+
+      // Admin ট্যাবে "admin" লিখলে আসল ইমেইল বসায় দাও
+      if (_isAdminMode && emailInput.toLowerCase() == "admin") {
+        finalEmail = "admin@nubtkpilot.com";
       }
 
-      // ২. ফায়ারবেস লগইন লজিক
-      Map<String, dynamic>? loginResult = await _auth.login(emailInput, passInput);
-
-      // সংশোধন: এখানে চেক করা হচ্ছে লগইন সফল কি না
+      // 🔥 ফিক্স: isAdmin প্যারামিটার পাঠাও। Admin হলে পাসওয়ার্ড ক্লিন হবে না।
+      Map<String, dynamic>? loginResult = await _auth.login(
+        finalEmail, 
+        passInput, 
+        isAdmin: _isAdminMode
+      );
+      
       if (loginResult['success'] == false) {
-        // যদি এরর মেসেজ থাকে তবে সেটা দেখানো
-        _showError(loginResult['message']?.toString() ?? "Login failed");
+        _showError(loginResult['message']?.toString() ?? "লগইন ফেইল");
       } else {
-        // লগইন সফল হলে রোল চেক করা
         User? user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           final role = await _auth.getRole(user.uid);
           
           if (!mounted) return;
-
-          // রোল এবং মোড চেক
+          
           if (role == 'student' && !_isAdminMode) {
             _navigateTo(const StudentDashboardScreen());
           } else if (role == 'admin' && _isAdminMode) {
             _navigateTo(const AdminDashboard());
           } else {
             await FirebaseAuth.instance.signOut();
-            _showError("Role mismatch! You are in ${_isAdminMode ? 'ADMIN' : 'STUDENT'} portal.");
+            _showError("ভুল পোর্টালে লগইন করছেন! Student হলে Student ট্যাব ব্যবহার করুন।");
           }
         } else {
-           _showError("User not found after login.");
+           _showError("লগইনের পর ইউজার পাওয়া যায়নি");
         }
       }
     } catch (e) {
-      // কাস্টিং এরর এড়াতে e.toString() ব্যবহার করা হয়েছে
       _showError(e.toString().replaceAll("Exception: ", ""));
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -101,7 +99,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final Color primaryColor = _isAdminMode ? Colors.red.shade800 : const Color(0xFF4F46E5);
-
     return PopScope(
       canPop: false, 
       onPopInvokedWithResult: (didPop, result) {
@@ -184,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: _email,
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
-                              labelText: _isAdminMode ? "Admin ID" : "Email Address",
+                              labelText: _isAdminMode ? "Admin ID or Email" : "Student Email",
                               prefixIcon: Icon(Icons.person_outline, color: primaryColor),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                             ),
@@ -194,13 +191,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: _password,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
-                              labelText: "Password",
+                              labelText: _isAdminMode ? "Password" : "Password / Phone Number",
                               prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
                               suffixIcon: IconButton(
                                 icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
                                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                               ),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                              helperText: _isAdminMode ? null : "রেজিস্ট্রেশনের সময় দেওয়া ফোন নম্বর",
                             ),
                           ),
                           const SizedBox(height: 25),

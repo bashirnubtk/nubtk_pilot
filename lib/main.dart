@@ -1,8 +1,6 @@
-//D:\projects\nubtk_pilot\lib\main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart'; // 🔥 নতুন লাইন ১
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:nubtk_pilot/features/home/splash_screen.dart';
 import 'package:nubtk_pilot/features/home/home_screen.dart';
@@ -14,11 +12,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp();
-  
-  // 🔥 নতুন লাইন ২, ৩, ৪ - শুধু এইটুকু অ্যাড
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-  );
   
   final prefs = await SharedPreferences.getInstance();
   

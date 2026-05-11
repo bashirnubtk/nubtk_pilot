@@ -20,6 +20,7 @@ class AdminStudentController {
     return await approveStudent(docId: studentId, data: studentData);
   }
 
+  // 🔥 ফাইনাল ফিক্স: Firebase Auth টাচই করব না। Admin লগইন ভাঙবে না।
   Future<void> approveStudent({
     required String docId,
     required Map<String, dynamic> data,
@@ -27,11 +28,19 @@ class AdminStudentController {
     try {
       String name = data['fullName'] ?? 'Unknown Student';
       String email = data['email']?.toString().trim() ?? '';
-      String phone = data['phone']?.toString().trim() ?? '12345678';
+      String phone = data['phone']?.toString().trim() ?? '';
       double hscGpa = double.tryParse(data['hscGpa']?.toString() ?? '0.0') ?? 0.0;
       String dept = (data['department'] ?? "CSE").toString().toUpperCase();
+      String uid = data['uid']?.toString().trim() ?? docId; // Student রেজিস্টারের সময় যে UID তৈরি হইছে
 
       if (email.isEmpty) throw Exception("স্টুডেন্টের ইমেইল পাওয়া যায়নি!");
+      if (phone.isEmpty) throw Exception("স্টুডেন্টের ফোন নম্বর পাওয়া যায়নি!");
+      if (uid.isEmpty) throw Exception("স্টুডেন্টের UID পাওয়া যায়নি!");
+
+      String cleanPassword = phone.replaceAll(RegExp(r'[\s\-\+]'), '').replaceAll('88', '');
+      if (cleanPassword.length > 11) {
+        cleanPassword = cleanPassword.substring(cleanPassword.length - 11);
+      }
 
       // ১. ডিজিটাল আইডি জেনারেশন
       final counterRef = _db.collection('counters').doc('student_id');
@@ -48,35 +57,32 @@ class AdminStudentController {
       double waiverAmount = totalCourseFee - netPayable;
       var installments = InstallmentGenerator.generateSemesterInstallments(finalAmount: netPayable);
 
-      // ৩. ডাটা আপডেট (সবচেয়ে গুরুত্বপূর্ণ অংশ)
-      // এখানে 'studentId' এবং 'digitalId' দুটিই রাখা হয়েছে যাতে কোনো পেজ খালি না থাকে
-      await _db.collection('students').doc(docId).set({
-        ...data, // আগের সব ডাটা (যেমন ফটো, মার্কশিট) অক্ষুণ্ণ রাখা হলো
-        'studentId': generatedId, // স্টুডেন্ট পোর্টালে সাধারণত এই নামেই আইডি খোঁজে
-        'digitalId': generatedId, 
-        'status': 'approved',
-        'role': 'student',
+      // ৩. students কালেকশন আপডেট - শুধু Status চেঞ্জ
+      await _db.collection('students').doc(docId).update({
+        'studentId': generatedId,
+        'digitalId': generatedId,
+        'status': 'approved', // 🔥 এটা দিয়েই Student লগইন করতে পারবে
         'approved': true,
         'waiverAmount': waiverAmount,
         'netPayable': netPayable,
-        'systemPassword': phone,
+        'systemPassword': cleanPassword,
         'installments': installments.map((e) => {
           'id': e.id,
           'amount': e.amount,
           'dueDate': e.dueDate.toIso8601String(),
           'isPaid': false,
           'semester': e.semester,
-          'status': 'Pending' // কিস্তির প্রাথমিক স্ট্যাটাস
+          'status': 'Pending'
         }).toList(),
         'approvalDate': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true)); // merge: true দিলে আগের ডাটা হারাবে না
+      });
 
       // ৪. জিমেইল পাঠানো
       await EmailService.sendApprovalEmail(
         recipientEmail: email,
         studentName: name,
         digitalId: generatedId,
-        password: phone,
+        password: cleanPassword,
         totalFee: totalCourseFee,
         waiver: waiverAmount,
         netPayable: netPayable,

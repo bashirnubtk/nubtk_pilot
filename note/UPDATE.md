@@ -440,6 +440,18 @@ git rm --cached android/app/google-services.json
 git commit -m "fix: add .env and keys to gitignore"
 git push origin dev
 
+
+
+# সিস্টেম_রিস্টোর_১১মে২০২৬ #এডমিন_লগইন_ঠিক #স্টুডেন্ট_রেজিস্ট্রেশন_ঠিক #অথ_ফ্লো_স্টেবল #রোলব্যাক_পয়েন্ট"
+
+git add .
+git commit -m "fix: restore auth flow - admin login, student registration & login working
+- Fixed admin logout issue by removing createUserWithEmailAndPassword from AdminStudentController
+- Fixed student registration permission-denied by aligning users collection with Firestore rules  
+- Fixed admin login failure by disabling password cleanup for admin mode
+- Restored original flow: Student registers → pending → Admin approves → Student login
+git push origin dev
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
