@@ -472,9 +472,19 @@ git tag v1.0.0-stable
 git push origin v1.0.0-stable
 
 
+# বিল্ড শেষে APK পাবা এখানে:
+D:\projects\nubtk_pilot\build\app\outputs\flutter-apk\app-release.apk
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
 
 # শেষ "ভালো" অবস্থায় ফিরে যেতে পারেন। টার্মিনালে এই কমান্ডটি দিন:
  git checkout .
+
+
+ # এখন APK বানানোর জন্য রেডি। আর কোনো ফাইল/ফোল্ডার বানানো লাগবে না। কালকের key.properties ঝামেলা এবার নাই।
+
+# শুধু এই ১টা কমান্ড কপি করে পেস্ট করো। ১০০% নির্ভুল:
+
+flutter clean && flutter pub get && flutter build apk --release --no-shrink
