@@ -45,3 +45,23 @@ lib/
 python_backend/
 └── main.py ← check_models.py কে API বানাবো
 
+
+Memory card
+
+Context: NUBTK PILOT Project v1.0.0-stable
+
+Tech: Flutter + Firebase + OpenRouter API
+Features:
+1. 3 Role: Student, Admin, Guest
+2. Guest AI: Uses API with role='guest'. Knows waiver chart 2024-25: GPA 10=100%, 9.5-9.99=75%, 9-9.49=50%, 8.5-8.99=25%, 8-8.49=10%
+3. AI Models: 28 free models, 5s timeout, local fallback if API fails
+4. Firebase: Auth + Firestore. Laptop off থাকলেও চলে
+5. APK: flutter build apk --release --no-shrink দিয়ে বানানো
+
+Critical Fixes Done:
+- Salam bug fixed: ইউজার সালাম দিলে তবেই সালাম
+- Context trimmed: installments list বাদ, timeout খায় না
+- All syntax error fixed, null-safety 100%
+
+Git Tag: v1.0.0-stable
+Location: D:\projects\nubtk_pilot
