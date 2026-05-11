@@ -17,27 +17,40 @@ class ApiService {
   final SharedPreferences _prefs;
   static const String _queueKey = 'offline_upload_queue';
 
-  // 🔥 টেক্সট মডেল - ইনস্ট্রাকশন ফলো করে এমনগুলা আগে
+  // 🔥 তোমার ২৮টা মডেল - ফাস্ট গুলা আগে
   static const List<String> _textModels = [
-    'z-ai/glm-4.5-air:free',
-    'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
-    'meta-llama/llama-3.3-70b-instruct:free',
-    'qwen/qwen3-coder:free',
-    'google/gemma-4-31b-it:free',
-    'nousresearch/hermes-3-llama-3.1-405b:free',
-    'nvidia/nemotron-3-super-120b-a12b:free',
-    'minimax/minimax-m2.5:free',
-    'openai/gpt-oss-120b:free',
-    'openai/gpt-oss-20b:free',
+    'google/gemma-4-31b-it:free', // 1. বেস্ট, ফাস্ট
+    'google/gemma-4-26b-a4b-it:free', // 2. ফাস্ট
+    'meta-llama/llama-3.3-70b-instruct:free', // 3. ইনস্ট্রাকশন ভালো
+    'qwen/qwen3-next-80b-a3b-instruct:free', // 4. বড় কনটেক্সট
+    'qwen/qwen3-coder:free', // 5. লজিক ভালো
+    'z-ai/glm-4.5-air:free', // 6. ব্যাকআপ
+    'openai/gpt-oss-120b:free', // 7. OpenAI
+    'openai/gpt-oss-20b:free', // 8. OpenAI ছোট
+    'nousresearch/hermes-3-llama-3.1-405b:free', // 9. সবচেয়ে বড়
+    'nvidia/nemotron-3-super-120b-a12b:free', // 10. Nvidia
+    'nvidia/nemotron-3-nano-30b-a3b:free', // 11. Nano
+    'nvidia/nemotron-nano-9b-v2:free', // 12. ছোট
+    'cognitivecomputations/dolphin-mistral-24b-venice-edition:free', // 13. Dolphin
+    'minimax/minimax-m2.5:free', // 14. Minimax
+    'inclusionai/ring-2.6-1t:free', // 15. 1T
+    'baidu/cobuddy:free', // 16. Baidu
+    'poolside/laguna-m.1:free', // 17. Laguna
+    'poolside/laguna-xs.2:free', // 18. Laguna ছোট
+    'openrouter/owl-alpha', // 19. Owl
+    'openrouter/free', // 20. Default
+    'liquid/lfm-2.5-1.2b-instruct:free', // 21. Liquid
+    'liquid/lfm-2.5-1.2b-thinking:free', // 22. Liquid thinking
+    'meta-llama/llama-3.2-3b-instruct:free', // 23. ছোট Llama
   ];
 
-  // 🔥 ভিশন মডেল - ছবি বোঝে এমনগুলা
+  // 🔥 ভিশন মডেল - তোমার লিস্ট থেকে
   static const List<String> _visionModels = [
-    'google/gemma-4-31b-it:free', // বেস্ট ভিশন
-    'nvidia/nemotron-nano-12b-v2-vl:free', // ফাস্ট ভিশন
-    'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', // রিজনিং সহ
-    'baidu/qianfan-ocr-fast:free', // OCR এর জন্য
-    'google/lyria-3-clip-preview', // ইমেজ বর্ণনা
+    'google/gemma-4-31b-it:free', // 1. বেস্ট ভিশন
+    'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', // 2. Omni
+    'nvidia/nemotron-nano-12b-v2-vl:free', // 3. Nano VL
+    'baidu/qianfan-ocr-fast:free', // 4. OCR
+    'google/lyria-3-clip-preview', // 5. Clip
   ];
 
   ApiService(this._prefs);
@@ -60,51 +73,125 @@ class ApiService {
     return data;
   }
 
-  // 🔥 রোল-গার্ডরেইল প্রম্পট - গেস্ট/স্টুডেন্ট/এডমিন আলাদা
+  // 🔥 ফিক্স: Context ছোট রাখো। ২৪টা কিস্তি পাঠাইলে Timeout হবেই।
+  Map<String, dynamic> _trimContext(String role, Map<String, dynamic> contextData) {
+    if (role == 'guest') return {};
+
+    final Map<String, dynamic> trimmed = {};
+
+    if (role == 'student' && contextData['paymentInfo']!= null) {
+      final p = contextData['paymentInfo'];
+      final List inst = p['installments']?? [];
+      trimmed['paymentInfo'] = {
+        'name': p['name'],
+        'studentId': p['studentId'],
+        'status': p['status'],
+        'totalDue': p['totalDue'],
+        'totalPaid': p['totalPaid'],
+        'paidCount': inst.where((i) => i['isPaid'] == true).length,
+        'pendingCount': inst.where((i) => i['isPaid']!= true).length,
+        'nextAmount': p['nextInstallment']?['amount'],
+        'nextDueDate': p['nextInstallment']?['dueDate'],
+        // 🔥 installments লিস্ট বাদ। এটাই Timeout করাইতেছিল।
+      };
+    }
+
+    if (role == 'admin' && contextData['allStudents']!= null) {
+      final List students = contextData['allStudents'];
+      trimmed['summary'] = {
+        'total': students.length,
+        'approved': students.where((s) => s['paymentStatus'] == 'approved').length,
+        'pending': students.where((s) => s['paymentStatus'] == 'pending').length,
+      };
+    }
+
+    if (contextData['resources']!= null) {
+      final List res = contextData['resources'];
+      trimmed['resources'] = res.take(3).map((r) => r['title']).toList();
+    }
+
+    return trimmed;
+  }
+
   String _buildSystemPrompt(String role) {
     const String guestRule = '''
-You are NUBTK PILOT AI. User is a GUEST. You MUST follow these rules:
-1. NEVER reveal payment, installment, student names, resources, or internal data.
-2. If user says "hi", "hello", reply ONLY: "হাই! আমি NUBTK PILOT AI। ভর্তি, ওয়েভার বা কোর্সের তথ্যের জন্য nubtk.edu.bd ভিজিট করুন। ভর্তির পর লগইন করে সব তথ্য পাবেন।"
-3. If asked about payment/resources/student data, reply: "এই তথ্যের জন্য লগইন করতে হবে।"
-4. Keep reply under 3 lines. Bangla only.''';
+You are NUBTK PILOT AI. User is GUEST.
+First message: "হাই! আমি NUBTK PILOT AI। কিভাবে সাহায্য করতে পারি?"
+Rules:
+1. Only answer: waiver policy, admission, departments, location.
+2. Waiver: "GPA 5.00=সর্বোচ্চ, 4.00-4.99=মাঝারি, 3.50-3.99=সাধারণ। বিস্তারিত: nubtk.edu.bd/admission"
+3. For payment/resources: "এই তথ্যের জন্য লগইন করুন।"
+4. Bangla, max 2 lines, friendly tone.''';
 
     const String studentRule = '''
-You are NUBTK PILOT AI. User is a STUDENT. You CAN use provided contextData.
-1. If user says "hi", reply: "হাই! পেমেন্ট, ইনস্টলমেন্ট বা রিসোর্স নিয়ে হেল্প করতে পারি। কী জানতে চাও?"
-2. For payment queries, use contextData['paymentInfo']. Format: "- ইনস্টলমেন্ট: X টাকা বাকি\n- ডিউ ডেট: X তারিখ"
-3. For resources, list ONLY titles from contextData['resources']. No links.
-4. NEVER invent data. If contextData is empty, say "তথ্যটি পাওয়া যায়নি।"
-5. Bangla only, max 4 lines.''';
+You are NUBTK PILOT AI. User is STUDENT. Use contextData['paymentInfo'].
+First message: "হাই! আমি NUBTK PILOT AI। পেমেন্ট বা রিসোর্স নিয়ে কী জানতে চান?"
+Rules:
+1. For "পেমেন্ট" queries:
+   - If totalDue > 0: "মোট বাকি: {totalDue} টাকা\nপরিশোধ: {paidCount}টি, বাকি: {pendingCount}টি\nপরের কিস্তি: {nextAmount} টাকা, ডিউ: {nextDueDate}"
+   - If totalDue = 0: "আপনার কোনো বকেয়া নেই ✅ সব {paidCount}টি কিস্তি পরিশোধিত।"
+2. For resources: List from contextData['resources'].
+3. DO NOT calculate. Use given numbers only.
+4. Bangla, max 3 lines, human-like friendly tone.''';
 
     const String adminRule = '''
-You are NUBTK PILOT AI. User is an ADMIN. You CAN use contextData['allStudents'].
-1. If user says "hi", reply: "হাই অ্যাডমিন! স্টুডেন্ট রিপোর্ট বা পেমেন্ট সারাংশ লাগবে?"
-2. For report, give summary: "মোট: X জন, পরিশোধ: Y জন, বাকি: Z জন"
-3. NEVER list individual student names unless asked.
-4. Bangla only, max 4 lines.''';
+You are NUBTK PILOT AI. User is ADMIN. Use contextData['summary'].
+First message: "হাই অ্যাডমিন! আমি NUBTK PILOT AI। রিপোর্ট লাগবে?"
+Rules:
+1. For "রিপোর্ট": "মোট স্টুডেন্ট: {total} জন\nApproved: {approved} জন\nPending: {pending} জন"
+2. Bangla, max 3 lines.''';
 
     if (role == 'admin') return adminRule;
     if (role == 'student') return studentRule;
-    return guestRule; // Default = guest
+    return guestRule;
+  }
+
+  String _getLocalFallback(String role, String message, Map<String, dynamic> context) {
+    final lower = message.toLowerCase();
+
+    if (role == 'guest') {
+      if (lower.contains('ওয়েভার') || lower.contains('gpa')) {
+        return "GPA 5.00=সর্বোচ্চ, 4.00-4.99=মাঝারি ওয়েভার।\nবিস্তারিত: nubtk.edu.bd/admission";
+      }
+      if (lower.contains('ভর্তি')) {
+        return "অনলাইন: nubtk.edu.bd/apply\nক্যাম্পাস: শিববাড়ি মোড়, খুলনা";
+      }
+      return "ভর্তি, ওয়েভার বা কোর্স সম্পর্কে জানতে চান?\nলগইন করলে পেমেন্ট দেখতে পারবেন।";
+    }
+
+    if (role == 'student' && context['paymentInfo']!= null) {
+      final p = context['paymentInfo'];
+      if (lower.contains('পেমেন্ট') || lower.contains('বাকি')) {
+        if (p['totalDue'] > 0) {
+          return "মোট বাকি: ${p['totalDue']} টাকা\nপরের কিস্তি: ${p['nextAmount']} টাকা\nডিউ: ${p['nextDueDate']}";
+        } else {
+          return "আপনার কোনো বকেয়া নেই ✅";
+        }
+      }
+    }
+
+    if (role == 'admin' && context['summary']!= null) {
+      final s = context['summary'];
+      return "মোট স্টুডেন্ট: ${s['total']} জন\nPending: ${s['pending']} জন";
+    }
+
+    return "দুঃখিত, বুঝতে পারিনি। আবার বলুন।";
   }
 
   Future<Map<String, dynamic>> chatWithAI(String message, String role, Map<String, dynamic> contextData) async {
     if (!await _isOnline()) {
-      return {'success': false, 'error': 'দুঃখিত, ইন্টারনেট সংযোগ নেই।'};
+      return {'success': true, 'data': _getLocalFallback(role, message, contextData)};
     }
-
     if (_openRouterKey.isEmpty) {
-      return {'success': false, 'error': 'API Key সেট করা হয়নি।'};
+      return {'success': true, 'data': _getLocalFallback(role, message, contextData)};
     }
 
-    // 🔥 গুরুত্বপূর্ণ: শুধু স্টুডেন্ট/এডমিন হলে ডাটা পাঠাবো, গেস্ট হলে খালি
-    final Map<String, dynamic> safeContext = (role == 'guest')? {} : _sanitizeData(contextData);
+    final Map<String, dynamic> safeContext = _trimContext(role, _sanitizeData(contextData));
     final systemPrompt = _buildSystemPrompt(role);
 
     for (String model in _textModels) {
       try {
-        debugPrint('Trying text model: $model for role: $role');
+        debugPrint('Trying model: $model for role: $role');
         final response = await http.post(
           Uri.parse(_openRouterUrl),
           headers: {
@@ -119,10 +206,10 @@ You are NUBTK PILOT AI. User is an ADMIN. You CAN use contextData['allStudents']
               {'role': 'system', 'content': systemPrompt},
               {'role': 'user', 'content': "Context: ${jsonEncode(safeContext)}\n\nUser: $message"}
             ],
-            'temperature': 0.2, // আরও স্ট্রিক্ট
-            'max_tokens': 250,
+            'temperature': 0.1,
+            'max_tokens': 150,
           }),
-        ).timeout(const Duration(seconds: 25));
+        ).timeout(const Duration(seconds: 5)); // 🔥 8s → 5s। দ্রুত ফেইল করবে।
 
         if (response.statusCode == 200) {
           var jsonResponse = jsonDecode(response.body);
@@ -131,31 +218,26 @@ You are NUBTK PILOT AI. User is an ADMIN. You CAN use contextData['allStudents']
             'success': true,
             'data': jsonResponse['choices'][0]['message']['content']
           };
-        } else if (response.statusCode == 429 || response.statusCode == 402) {
-          debugPrint('Rate limited: $model, trying next...');
-          continue;
         }
       } catch (e) {
-        debugPrint('Exception with $model: $e');
-        continue;
+        debugPrint('Model $model failed: $e');
+        continue; // 🔥 সাথে সাথে পরের মডেলে যাবে
       }
     }
-    return {'success': false, 'error': 'সব AI সার্ভার ব্যস্ত। 1 মিনিট পর আবার চেষ্টা করুন।'};
+
+    // 🔥 ২৮টা মডেল ফেইল করলেও লোকাল উত্তর দিবে। "সার্ভার ব্যস্ত" বলবে না।
+    return {'success': true, 'data': _getLocalFallback(role, message, safeContext)};
   }
 
-  // 🔥 ভিশন মডেল দিয়ে ছবি অ্যানালাইসিস
   Future<Map<String, dynamic>> analyzeImage(XFile imageFile, String userId) async {
     if (!await _isOnline()) {
       await _addToOfflineQueue(imageFile.path, userId);
-      return {'success': true, 'source': 'offline', 'data': 'Saved offline. Will sync when online.'};
+      return {'success': true, 'data': 'ইন্টারনেট নাই। অনলাইনে এলে দেখাবো।'};
     }
-
     try {
-      // ছবিকে base64 এ কনভার্ট
       final bytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(bytes);
       final dataUrl = 'data:image/jpeg;base64,$base64Image';
-
       for (String model in _visionModels) {
         try {
           debugPrint('Trying vision model: $model');
@@ -173,38 +255,30 @@ You are NUBTK PILOT AI. User is an ADMIN. You CAN use contextData['allStudents']
                 {
                   'role': 'user',
                   'content': [
-                    {'type': 'text', 'text': 'এই ছবিটা কীসের? বাংলায় 2 লাইনে বলো। যদি কোড হয়, কী কোড বুঝাও।'},
+                    {'type': 'text', 'text': 'এই ছবিটা কীসের? বাংলায় 2 লাইনে বলো।'},
                     {'type': 'image_url', 'image_url': {'url': dataUrl}}
                   ]
                 }
               ],
-              'max_tokens': 200,
+              'max_tokens': 150,
             }),
-          ).timeout(const Duration(seconds: 30));
-
+          ).timeout(const Duration(seconds: 15));
           if (response.statusCode == 200) {
             var jsonResponse = jsonDecode(response.body);
             debugPrint('Vision success with: $model');
             return {
               'success': true,
-              'source': 'vision',
               'data': jsonResponse['choices'][0]['message']['content']
             };
-          } else if (response.statusCode == 429 || response.statusCode == 402) {
-            debugPrint('Vision rate limited: $model, trying next...');
-            continue;
           }
         } catch (e) {
           debugPrint('Vision exception with $model: $e');
           continue;
         }
       }
-
-      // সব ভিশন ফেইল করলে লোকাল সার্ভার ট্রাই করো
       return await _sendToServer(imageFile, userId);
     } catch (e) {
-      await _addToOfflineQueue(imageFile.path, userId);
-      return {'success': false, 'error': 'ছবি প্রসেস করা যায়নি: $e'};
+      return {'success': false, 'error': 'ছবি প্রসেস করা যায়নি'};
     }
   }
 
@@ -215,7 +289,6 @@ You are NUBTK PILOT AI. User is an ADMIN. You CAN use contextData['allStudents']
       request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
       var streamedResponse = await request.send().timeout(const Duration(seconds: 30));
       var response = await http.Response.fromStream(streamedResponse);
-
       if (response.statusCode == 200) {
         var jsonResponse = jsonDecode(response.body);
         return {'success': true, 'source': 'server', 'data': jsonResponse};

@@ -7,44 +7,24 @@ class FirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 🔥 ফিক্স: গেস্ট/লগআউট সেফ রোল চেক
+  // 🔥 গেস্ট/লগআউট সেফ রোল চেক
   Future<String> getUserRole() async {
     final user = _auth.currentUser;
-    
-    // ইউজার লগইন না থাকলে সরাসরি guest
     if (user == null) {
       debugPrint('No user logged in -> guest');
       return 'guest';
     }
-
     try {
       final doc = await _db.collection('users').doc(user.uid).get();
-      
-      // ডকুমেন্ট না থাকলে guest
-      if (!doc.exists) {
-        debugPrint('User doc not found -> guest');
-        return 'guest';
-      }
-
+      if (!doc.exists) return 'guest';
       final data = doc.data();
-      // role ফিল্ড না থাকলে guest
-      if (data == null || !data.containsKey('role')) {
-        debugPrint('Role field missing -> guest');
-        return 'guest';
-      }
-      
+      if (data == null || !data.containsKey('role')) return 'guest';
       final role = data['role'] as String;
-      debugPrint('User role from DB: $role');
-      
-      // শুধু student বা admin ভ্যালিড, বাকি সব guest
-      if (role == 'admin' || role == 'student') {
-        return role;
-      } else {
-        return 'guest';
-      }
+      if (role == 'admin' || role == 'student') return role;
+      return 'guest';
     } catch (e) {
       debugPrint("getUserRole error: $e -> guest");
-      return 'guest'; // এরর হলেও guest
+      return 'guest';
     }
   }
 
@@ -52,7 +32,6 @@ class FirebaseService {
   Future<Map<String, dynamic>?> getUserProfile() async {
     final user = _auth.currentUser;
     if (user == null) return null;
-    
     try {
       final doc = await _db.collection('users').doc(user.uid).get();
       return doc.data();
@@ -62,20 +41,44 @@ class FirebaseService {
     }
   }
 
-  // স্টুডেন্ট পেমেন্ট ইনফো
+  // 🔥 স্টুডেন্ট পেমেন্ট ইনফো - ফাইনাল ফিক্সড
   Future<Map<String, dynamic>?> getStudentPaymentInfo(String uid) async {
     try {
       final doc = await _db.collection('students').doc(uid).get();
       if (!doc.exists) return null;
       
       final data = doc.data()!;
+      final List installments = data['installments'] ?? [];
+      
+      double totalDue = 0;
+      double totalPaid = 0;
+      Map<String, dynamic>? nextDue;
+      
+      for (var inst in installments) {
+        double amount = (inst['amount'] ?? 0).toDouble();
+        if (inst['isPaid'] == true) {
+          totalPaid += amount;
+        } else {
+          totalDue += amount;
+          nextDue ??= {
+            'amount': amount,
+            'dueDate': inst['dueDate'],
+            'semester': inst['semester'],
+          };
+        }
+      }
+
       return {
-        'name': data['name'] ?? '',
+        'name': data['fullName'] ?? '',
         'studentId': data['studentId'] ?? '',
-        'installments': data['installments'] ?? [],
-        'paymentStatus': data['paymentStatus'] ?? 'pending',
-        'totalDue': data['totalDue'] ?? 0,
-        'totalPaid': data['totalPaid'] ?? 0,
+        'digitalId': data['digitalId'] ?? '',
+        'status': data['status'] ?? 'pending',
+        'totalDue': totalDue,
+        'totalPaid': totalPaid,
+        'nextInstallment': nextDue,
+        'installments': installments,
+        'netPayable': data['netPayable'] ?? 0,
+        'waiverAmount': data['waiverAmount'] ?? 0,
       };
     } catch (e) {
       debugPrint("getStudentPaymentInfo error: $e");
@@ -91,11 +94,10 @@ class FirebaseService {
         final data = doc.data();
         return {
           'uid': doc.id,
-          'name': data['name'] ?? '',
+          'name': data['fullName'] ?? '',
           'studentId': data['studentId'] ?? '',
-          'paymentStatus': data['paymentStatus'] ?? 'pending',
-          'totalDue': data['totalDue'] ?? 0,
-          'totalPaid': data['totalPaid'] ?? 0,
+          'paymentStatus': data['status'] ?? 'pending',
+          'totalDue': data['netPayable'] ?? 0,
         };
       }).toList();
     } catch (e) {

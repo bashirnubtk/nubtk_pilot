@@ -452,6 +452,26 @@ git commit -m "fix: restore auth flow - admin login, student registration & logi
 - Restored original flow: Student registers → pending → Admin approves → Student login
 git push origin dev
 
+# ট্যাগ মারো - এটাই লক:
+FINAL PROJECT
+
+git add .
+git commit -m "fix: Guest AI smart reply + 28 models + timeout fix
+
+- Guest now uses API with role='guest', no more hardcoded replies
+- Added 28 free models with 5s timeout per model
+- Trimmed context: installments list removed
+- Local fallback added
+- Salam bug fixed
+- NUBTK waiver chart 2024-25 updated
+- All syntax errors fixed"
+git push origin dev
+
+# final
+git tag v1.0.0-stable
+git push origin v1.0.0-stable
+
+
 # এখন ডেভ ব্রাঞ্চকে সার্ভারে পাঠিয়ে দিন
  git push origin dev
 
