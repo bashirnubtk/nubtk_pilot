@@ -2,6 +2,9 @@
 git config --global user.email "bashircse.nubtk@gmail.com"
 git config --global user.name "bashirnubtk"
 
+admin user : admin@nubtkpilot.com
+admin password : admin@2026
+
 # প্রজেক্ট ক্লোন করা
 cd E:\Projects
 git clone https://github.com/bashirnubtk/nubtk_pilot.git
