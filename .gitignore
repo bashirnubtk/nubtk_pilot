@@ -59,3 +59,8 @@ upload-keystore.jks
 
 # 🔥 Local config
 local.properties
+
+# 🔥 API Keys & Sensitive Files - GitHub Push Protection এর জন্য অ্যাড করলাম
+lib/features/ai_bot/api
+note/switch_model.py
+note/switch_model.py.md
